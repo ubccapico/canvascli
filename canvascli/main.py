@@ -11,7 +11,12 @@ from canvasapi.exceptions import InvalidAccessToken
 import click
 
 
-@click.command()
+@click.group()
+def cli():
+    pass
+
+
+@cli.command()
 @click.option('--course-id', default=None, help='Canvas id of the course to'
               ' download grades from, e.g. 53665. This id can be found at the end'
               " of the URL of the course's canvas page or by running"
@@ -35,12 +40,11 @@ import click
 @click.option('--open-chart', default=None, type=bool, help='Whether to open'
               ' the grade distribution chart automatically.'
               ' Default: Ask at the end')
-@click.option('--show-courses', default=False, is_flag=True, help='If this flag'
-              ' is specified all courses that can be accessed with the API token'
-              ' will be printed and the program will then exit')
-def cli(course_id, filename, api_url, student_status, drop_student_numbers,
-        drop_grade_threshold, drop_na, open_chart, show_courses):
-    """\b
+def prepare_fsc_grades(course_id, filename, api_url, student_status,
+                       drop_student_numbers, drop_grade_threshold, drop_na,
+                       open_chart):
+    """Prepare canvas grades for FSC submission.
+    \b
     - Downloads grades from a canvas course and convert them to the format
       required by the FSC for submission of final grades.
     - Drops students with missing info or 0 grade by default.
@@ -61,40 +65,44 @@ def cli(course_id, filename, api_url, student_status, drop_student_numbers,
         # Show all courses accessible with your API token
         fsc_grades --show-courses
     """
-    fsc_grades = FscGrades(course_id, filename, api_url, student_status,
-                           drop_student_numbers, drop_grade_threshold, drop_na,
-                           open_chart)
+    fsc_grades = FscGrades(
+        course_id, filename, api_url, student_status, drop_student_numbers,
+        drop_grade_threshold, drop_na, open_chart)
     fsc_grades.connect_to_canvas()
-    if show_courses:
-        fsc_grades.show_courses()
-    else:
-        fsc_grades.connect_to_course()
-        fsc_grades.get_canvas_grades()
-        fsc_grades.drop_students()
-        fsc_grades.convert_grades_to_fsc_format()
-        fsc_grades.save_fsc_grades_to_file()
-        fsc_grades.plot_fsc_grade_distribution()
-        fsc_grades.show_manual_grade_entry_note()
+    fsc_grades.connect_to_course()
+    fsc_grades.get_canvas_grades()
+    fsc_grades.drop_students()
+    fsc_grades.convert_grades_to_fsc_format()
+    fsc_grades.save_fsc_grades_to_file()
+    fsc_grades.plot_fsc_grade_distribution()
+    fsc_grades.show_manual_grade_entry_note()
 
 
-@dataclass
-class FscGrades():
+@cli.command()
+@click.option('--api-url', default='https://canvas.ubc.ca', help='Base canvas URL.'
+              ' Default: https://canvas.ubc.ca')
+def show_courses(api_url):
+    """Show courses accessible by the given API token."""
+    accessible_courses = AccessibleCourses(api_url)
+    accessible_courses.connect_to_canvas()
+    accessible_courses.show_courses()
+
+
+# TODO could use https://github.com/biqqles/dataclassy to allow for dataclass
+# inheritance there are only two assignments in the init here so might as well
+# do them manually. Dataclass inheritance might also be fixed in 3.10
+# https://bugs.python.org/issue36077
+class CanvasConnection():
     """Parent class to facilitate sharing objects between functions."""
-    course_id: int
-    filename: str
-    api_url: str
-    student_status: str
-    drop_student_numbers: str
-    drop_grade_threshold: int
-    drop_na: bool
-    open_chart: bool
-    invalid_canvas_url_msg: str = (
-        '\nThe canvas URL you specified is invalid,'
-        ' Please supply a URL in the folowing format: https://canvas.ubc.ca')
-    invalid_canvas_api_token_msg: str = (
-        '\nYour API token is invalid. The token you tried is:\n{}'
-        '\n\nSee this canvas help page for how to setup up API tokens:'
-        '\nhttps://community.canvaslms.com/t5/Instructor-Guide/How-do-I-manage-API-access-tokens-as-an-instructor/ta-p/1177')
+
+    def __init__(self):
+        self.invalid_canvas_url_msg: str = (
+            '\nThe canvas URL you specified is invalid,'
+            ' Please supply a URL in the folowing format: https://canvas.ubc.ca')
+        self.invalid_canvas_api_token_msg: str = (
+            '\nYour API token is invalid. The token you tried is:\n{}'
+            '\n\nSee this canvas help page for how to setup up API tokens:'
+            '\nhttps://community.canvaslms.com/t5/Instructor-Guide/How-do-I-manage-API-access-tokens-as-an-instructor/ta-p/1177')
 
     def connect_to_canvas(self):
         """Connect to a canvas instance."""
@@ -104,6 +112,13 @@ class FscGrades():
             click.echo('Paste your canvas API token and press enter:')
             self.api_token = getpass.getpass()
         self.canvas = Canvas(self.api_url, self.api_token)
+        return
+
+
+@dataclass
+class AccessibleCourses(CanvasConnection):
+    """TODO"""
+    api_url: str
 
     def show_courses(self):
         """Show all courses accessible from a specific API token."""
@@ -119,6 +134,20 @@ class FscGrades():
             raise SystemExit(self.invalid_canvas_api_token_msg.format(self.api_token))
         click.echo("Your API token has access to the following courses:\n")
         click.echo(pd.DataFrame(courses).to_markdown(index=False))
+        return
+
+
+@dataclass
+class FscGrades(CanvasConnection):
+    """Parent class to facilitate sharing objects between functions."""
+    course_id: int
+    filename: str
+    api_url: str
+    student_status: str
+    drop_student_numbers: str
+    drop_grade_threshold: int
+    drop_na: bool
+    open_chart: bool
 
     def connect_to_course(self):
         """Connect to as specific canvas course."""
