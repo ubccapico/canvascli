@@ -13,6 +13,21 @@ import click
 
 @click.group()
 def cli():
+    """A CLI to review and convert Canvas grades.
+
+    \b
+    Examples:
+        # Download grades from canvas and convert them to FSC format
+        canvascli prepare-fsc-grades --course-id 53665
+        \b
+        # Show courses accessible by the given API token
+        canvascli show-courses
+
+    See the --help for each subcommand for more options.
+
+    If you don't want to be prompted for your Canvas API token,
+    you can save it to an environmental variable named CANVAS_PAT.
+    """
     pass
 
 
