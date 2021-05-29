@@ -32,10 +32,10 @@ def cli():
 
 
 @cli.command()
-@click.option('--course-id', default=None, help='Canvas id of the course to'
-              ' download grades from, e.g. 53665. This id can be found at the end'
-              " of the URL of the course's canvas page or by running"
-              '`fsc_grades --show-courses`. Default: None')
+@click.option('--course-id', default=None, required=True, help='Canvas id'
+              ' of the course to' ' download grades from, e.g. 53665. This id'
+              ' can be found by running `canvascli show-courses`'
+              "(and in the course's canvas page URL). Default: None")
 @click.option('--filename', default=None, help='Name of the saved file and chart'
               ' (without file extension). Default: Automatic based on the course.')
 @click.option('--api-url', default='https://canvas.ubc.ca', help='Base canvas URL.'
@@ -60,25 +60,23 @@ def prepare_fsc_grades(course_id, filename, api_url, student_status,
                        open_chart):
     """Prepare canvas grades for FSC submission.
     \b
-    - Downloads grades from a canvas course and convert them to the format
-      required by the FSC for submission of final grades.
-    - Drops students with missing info or 0 grade by default.
-    - A CSV file is saved in the current directory,
-      which can be uploaded directly to FSC.
-    - A grade distribution chart is saved in the current directory.
-    - If you don't want to be prompted for your Canvas API token,
-      you can save it to an environmental variable named CANVAS_PAT.
+    Downloads grades from a canvas course and convert them to the format
+    required by the FSC for submission of final grades.
+
+    Drops students with missing info or 0 grade by default.
+
+    A CSV file is saved in the current directory,
+    which can be uploaded directly to FSC.
+
+    A grade distribution chart is saved in the current directory.
 
     \b
-    Example usage:
-        # Download grades from canvas and convert them to FSC
-        fsc_grades --course-id 53665
+    Examples:
+        # Download grades from canvas and convert them to FSC format
+        canvascli prepare_fsc_grades --course-id 53665
         \b
         # Give a custom file name and drop a specific student
-        fsc_grades --course-id 53665 --filename my-custom-name --drop-students "43659202"
-        \b
-        # Show all courses accessible with your API token
-        fsc_grades --show-courses
+        canvascli prepare_fsc_grades --course-id 53665 --drop-students "43659202"
     """
     fsc_grades = FscGrades(
         course_id, filename, api_url, student_status, drop_student_numbers,
@@ -117,8 +115,8 @@ def show_courses(api_url, filter_):
 
 
 # TODO could use https://github.com/biqqles/dataclassy to allow for dataclass
-# inheritance there are only two assignments in the init here so might as well
-# do them manually. Dataclass inheritance might also be fixed in 3.10
+# inheritance, but there are only two assignments in the init here so might as
+# well do them manually. Dataclass inheritance might also be fixed in 3.10
 # https://bugs.python.org/issue36077
 class CanvasConnection():
     """Parent class to facilitate sharing objects between functions."""
@@ -145,29 +143,37 @@ class CanvasConnection():
 
 @dataclass
 class AccessibleCourses(CanvasConnection):
-    """TODO"""
+    """TODO Parent class to facilitate sharing objects between functions."""
     api_url: str
+    filter_: str
 
-    def show_courses(self):
-        """Show all courses accessible from a specific API token."""
-        courses = defaultdict(list)
+    def download_courses(self):
+        """Download all courses accessible from a specific API token."""
+        self.courses = defaultdict(list)
         try:
             for course in self.canvas.get_courses():
-                courses['id'].append(course.id)
-                courses['name'].append(course.name)
+                self.courses['id'].append(course.id)
+                self.courses['name'].append(course.name)
         # Show common exceptions in a way that is easy to understand
         except MissingSchema:
             raise SystemExit(self.invalid_canvas_url_msg)
         except InvalidAccessToken:
             raise SystemExit(self.invalid_canvas_api_token_msg.format(self.api_token))
+        return
+
+    def filter_and_show_courses(self):
+        """Filter and show downloaded courses."""
         click.echo("Your API token has access to the following courses:\n")
-        click.echo(pd.DataFrame(courses).to_markdown(index=False))
+        click.echo(
+            pd.DataFrame(self.courses)
+            .query('name.str.contains(@self.filter_)', engine='python')
+            .to_markdown(index=False))
         return
 
 
 @dataclass
 class FscGrades(CanvasConnection):
-    """Parent class to facilitate sharing objects between functions."""
+    """TODO Parent class to facilitate sharing objects between functions."""
     course_id: int
     filename: str
     api_url: str
