@@ -13,7 +13,7 @@ import click
 
 @click.group()
 def cli():
-    """A CLI to review and convert Canvas grades.
+    """A CLI to reformat and review Canvas grades.
 
     \b
     Examples:
@@ -58,7 +58,7 @@ def cli():
 def prepare_fsc_grades(course_id, filename, api_url, student_status,
                        drop_student_numbers, drop_grade_threshold, drop_na,
                        open_chart):
-    """Prepare canvas grades for FSC submission.
+    """Prepare course grades for FSC submission.
     \b
     Downloads grades from a canvas course and convert them to the format
     required by the FSC for submission of final grades.
@@ -112,6 +112,18 @@ def show_courses(api_url, filter_):
     accessible_courses.connect_to_canvas()
     accessible_courses.download_courses()
     accessible_courses.filter_and_show_courses()
+
+
+@cli.command()
+def z_compare_TA_grading():
+    """**Not yet implemented**"""
+    pass
+
+
+@cli.command()
+def z_review_student_grades():
+    """**Not yet implemented**"""
+    pass
 
 
 # TODO could use https://github.com/biqqles/dataclassy to allow for dataclass
