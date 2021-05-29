@@ -96,11 +96,24 @@ def prepare_fsc_grades(course_id, filename, api_url, student_status,
 @cli.command()
 @click.option('--api-url', default='https://canvas.ubc.ca', help='Base canvas URL.'
               ' Default: https://canvas.ubc.ca')
-def show_courses(api_url):
-    """Show courses accessible by the given API token."""
-    accessible_courses = AccessibleCourses(api_url)
+@click.option('--filter', 'filter_', default='', help='Only show courses including'
+              ' this string. Useful to find specific course.'
+              ' Default: "" (matches all courses)')
+def show_courses(api_url, filter_):
+    """Show courses accessible by the given API token.
+
+    Examples:
+        \b
+        # Show all courses
+        canvascli show-courses
+        \b
+        # Show only courses including the string "541"
+        canvascli show-courses --filter 541
+    """
+    accessible_courses = AccessibleCourses(api_url, filter_)
     accessible_courses.connect_to_canvas()
-    accessible_courses.show_courses()
+    accessible_courses.download_courses()
+    accessible_courses.filter_and_show_courses()
 
 
 # TODO could use https://github.com/biqqles/dataclassy to allow for dataclass
