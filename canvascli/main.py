@@ -5,10 +5,10 @@ from dataclasses import dataclass
 from requests.exceptions import MissingSchema
 
 import altair as alt
+import click
 import pandas as pd
 from canvasapi import Canvas
 from canvasapi.exceptions import InvalidAccessToken
-import click
 
 
 @click.group()
