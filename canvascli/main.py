@@ -102,8 +102,8 @@ def prepare_fsc_grades(course_id, filename, api_url, student_status,
 @click.option('--api-url', default='https://canvas.ubc.ca', help='Base canvas URL.'
               ' Default: https://canvas.ubc.ca')
 @click.option('--filter', 'filter_', default='', help='Only show courses including'
-              ' this string. Useful to find specific course.'
-              ' Default: "" (matches all courses)')
+              ' this string (case insensitve). Useful to narrow down the displayed'
+              ' results. Default: "" (matches all courses)')
 def show_courses(api_url, filter_):
     """Show courses accessible by the given API token.
 
@@ -180,7 +180,7 @@ class AccessibleCourses(CanvasConnection):
         click.echo("Your API token has access to the following courses:\n")
         click.echo(
             pd.DataFrame(self.courses)
-            .query('name.str.contains(@self.filter_)', engine='python')
+            .query('name.str.contains(@self.filter_, case=False)', engine='python')
             .to_markdown(index=False))
         return
 
