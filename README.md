@@ -6,7 +6,7 @@ for final submission to the FSC at UBC.
 
 ## Installation
 
-`canvascli` can be installed via `pip install canvascli`.
+`canvascli` can be installed via `pip install git+https://github.com/joelostblom/canvascli`.
 
 ## Usage
 
@@ -72,6 +72,38 @@ This will output a table with all the courses
 your API token has access to.
 Run `canvascli show-courses --help`
 to view all available options.
+
+## Shell completion
+
+You can set up shell completion for `canvascli` subcommands and options
+by saving the relevant completion file from the repo
+and sourcing it in your terminals configuration file.
+If you don't want to do this manually,
+you can run the following command
+(don't forget to restart your shell afterwards).
+
+### Zsh
+
+First make sure that your zsh general shell completion enabled
+by adding `autoload -Uz compinit && compinit` to your `.zshrc`;
+it is important that this line is added before running the command below.
+
+```sh
+curl -Ss https://raw.githubusercontent.com/joelostblom/canvascli/main/canvascli-complete.zsh > ~/.canvascli-complete.zsh && echo ". ~/.canvascli-complete.zsh" >> ~/.zshrc
+```
+
+### Bash
+
+```sh
+curl -Ss https://raw.githubusercontent.com/joelostblom/canvascli/main/canvascli-complete.bash > ~/.canvascli-complete.bash && echo ". ~/.canvascli-complete.bash" >> ~/.bashrc
+```
+
+Bash shell completion requires bash >= 4.0
+(notably macOS ships with 3.x so use zsh instead).
+If you are using GitBash for Windows,
+change `.bashrc` to `.bash_profile` in the command above,
+and note that you will only get shell completion after typing `cavascli`,
+not `canvascli.exe`.
 
 ## Contributing
 

@@ -10,6 +10,7 @@ Note that major version zero (0.y.z) is for initial development and anything may
 ## Added
 - `show_courses` got a `--filter` option to facilitate finding the right course.
 - `canvascli` now has a `--version` flag.
+- Shell completion.
 
 ## Changed
 - The package was refactored to modularize functionality into subcommands, each with its own options.
