@@ -14,9 +14,11 @@ from canvasapi.exceptions import InvalidAccessToken
 # lost. Dataclass inheritance might be fixed in 3.10
 # https://bugs.python.org/issue36077
 from dataclassy import dataclass
+from . import __version__
 
 
 @click.group()
+@click.version_option(version=__version__, prog_name='canvascli')
 def cli():
     """A CLI to reformat and review Canvas grades.
 
