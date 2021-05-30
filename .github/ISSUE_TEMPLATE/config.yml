@@ -1,0 +1,5 @@
+blank_issues_enabled: false
+contact_links:
+  - name: Question or Discussion
+    url: https://github.com/joelostblom/canvascli/discussions
+    about: If you want to ask something or start a discussion.
