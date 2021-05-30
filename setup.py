@@ -12,7 +12,8 @@ setup(
         'canvasapi',
         'click',
         'pandas',
-        'tabulate'
+        'tabulate',
+        'dataclassy'
     ],
     entry_points={
         'console_scripts': [

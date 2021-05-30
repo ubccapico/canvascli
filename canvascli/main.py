@@ -1,7 +1,6 @@
 import getpass
 import os
 from collections import defaultdict
-from dataclasses import dataclass
 from requests.exceptions import MissingSchema
 
 import altair as alt
@@ -9,6 +8,12 @@ import click
 import pandas as pd
 from canvasapi import Canvas
 from canvasapi.exceptions import InvalidAccessToken
+# Using https://github.com/biqqles/dataclassy instead of dataclasses from
+# stdlibto allow for dataclass inheritance when there are default values. Could
+# use a custom init but it gets messy and the advantage of using dataclasses is
+# lost. Dataclass inheritance might be fixed in 3.10
+# https://bugs.python.org/issue36077
+from dataclassy import dataclass
 
 
 @click.group()
@@ -126,21 +131,16 @@ def z_review_student_grades():
     pass
 
 
-# TODO could use https://github.com/biqqles/dataclassy to allow for dataclass
-# inheritance, but there are only two assignments in the init here so might as
-# well do them manually. Dataclass inheritance might also be fixed in 3.10
-# https://bugs.python.org/issue36077
+@dataclass
 class CanvasConnection():
     """Parent class to facilitate sharing objects between functions."""
-
-    def __init__(self):
-        self.invalid_canvas_url_msg: str = (
-            '\nThe canvas URL you specified is invalid,'
-            ' Please supply a URL in the folowing format: https://canvas.ubc.ca')
-        self.invalid_canvas_api_token_msg: str = (
-            '\nYour API token is invalid. The token you tried is:\n{}'
-            '\n\nSee this canvas help page for how to setup up API tokens:'
-            '\nhttps://community.canvaslms.com/t5/Instructor-Guide/How-do-I-manage-API-access-tokens-as-an-instructor/ta-p/1177')
+    invalid_canvas_url_msg: str = (
+        '\nThe canvas URL you specified is invalid,'
+        ' Please supply a URL in the folowing format: https://canvas.ubc.ca')
+    invalid_canvas_api_token_msg: str = (
+        '\nYour API token is invalid. The token you tried is:\n{}'
+        '\n\nSee this canvas help page for how to setup up API tokens:'
+        '\nhttps://community.canvaslms.com/t5/Instructor-Guide/How-do-I-manage-API-access-tokens-as-an-instructor/ta-p/1177')
 
     def connect_to_canvas(self):
         """Connect to a canvas instance."""
