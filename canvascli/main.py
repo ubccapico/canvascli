@@ -35,7 +35,7 @@ def cli():
     If you don't want to be prompted for your Canvas API token,
     you can save it to an environmental variable named CANVAS_PAT.
     """
-    pass
+    return
 
 
 @cli.command()
@@ -96,6 +96,7 @@ def prepare_fsc_grades(course_id, filename, api_url, student_status,
     fsc_grades.save_fsc_grades_to_file()
     fsc_grades.plot_fsc_grade_distribution()
     fsc_grades.show_manual_grade_entry_note()
+    return
 
 
 @cli.command()
@@ -119,18 +120,19 @@ def show_courses(api_url, filter_):
     accessible_courses.connect_to_canvas()
     accessible_courses.download_courses()
     accessible_courses.filter_and_show_courses()
+    return
 
 
 @cli.command()
 def z_compare_TA_grading():
     """**Not yet implemented**"""
-    pass
+    return
 
 
 @cli.command()
 def z_review_student_grades():
     """**Not yet implemented**"""
-    pass
+    return
 
 
 @dataclass
@@ -214,6 +216,7 @@ class FscGrades(CanvasConnection):
         if self.filename is None:
             self.filename = (f'fsc-grades_{self.course.course_code.replace(" ", "-")}'
                              .replace('/', '-'))
+        return
 
     def get_canvas_grades(self):
         """Download grades from a canvas course."""
