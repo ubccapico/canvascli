@@ -4,6 +4,7 @@ See the README and class docstrings for more info.
 import getpass
 import os
 from collections import defaultdict
+from decimal import Decimal, ROUND_HALF_UP
 from requests.exceptions import MissingSchema
 
 import altair as alt
@@ -282,6 +283,13 @@ class FscGrades(CanvasConnection):
         self.fsc_grades = self.fsc_grades[[
             'Session', 'Campus', 'Student Number', 'Subject', 'Course', 'Section',
             'Surname', 'Preferred Name', 'Standing', 'Standing Reason', 'Percent Grade']]
+        # Using Decimal to always round up .5 instead of rounding to even,
+        # which is the default in numpy but could seem unfair to individual students.
+        # The Decimal type is not json serializable (issue for altair) so changing to int.
+        self.fsc_grades['Percent Grade'] = self.fsc_grades['Percent Grade'].apply(
+            lambda x: Decimal(x).quantize(0, rounding=ROUND_HALF_UP)).astype(int)
+        # Cap grades at 100
+        self.fsc_grades.loc[self.fsc_grades['Percent Grade'] > 100, 'Percent Grade'] = 100
         return
 
     def save_fsc_grades_to_file(self):
