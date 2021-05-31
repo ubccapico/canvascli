@@ -44,6 +44,10 @@ Commands:
   show-courses             Show courses accessible by the given API token.
 ```
 
+> Note that if you are using GitBash's default terminal on Windows,
+you will not be able to paste your Canvas API token
+and need to define the environmental variable instead.
+
 The most common use case
 is probably to prepare final grades for FSC submission,
 which you can do like so:
