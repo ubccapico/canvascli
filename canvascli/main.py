@@ -43,8 +43,8 @@ def cli():
 
 
 @cli.command()
-@click.option('--course-id', default=None, required=True, help='Canvas id'
-              ' of the course to' ' download grades from, e.g. 53665. This id'
+@click.option('--course-id', default=None, required=True, type=int, help='Canvas id'
+              ' of the course to download grades from, e.g. 53665. This id'
               ' can be found by running `canvascli show-courses`'
               "(and in the course's canvas page URL). Default: None")
 @click.option('--filename', default=None, help='Name of the saved file and chart'
