@@ -52,10 +52,10 @@ def cli():
               ' Default: https://canvas.ubc.ca')
 @click.option('--student-status', default='active', help='Which types of students'
               ' to download grades for. Default: active')
-@click.option('--drop-student-numbers', default=None, help='Student numbers to drop,'
+@click.option('--drop-students', default=None, help='Student numbers to drop,'
               ' in quotes separated by spaces, e.g. "14391238 30329123".'
               ' Useful for removing specific students. Default: None')
-@click.option('--drop-grade-threshold', default=0, help='Students with grades <='
+@click.option('--drop-threshold', default=0, help='Students with grades <='
               ' this threshold are dropped. Useful for removing test students'
               ' and students that dropped the course after completing some work.'
               ' Default: 0')
@@ -66,18 +66,18 @@ def cli():
               ' the grade distribution chart automatically.'
               ' Default: Ask at the end')
 def prepare_fsc_grades(course_id, filename, api_url, student_status,
-                       drop_student_numbers, drop_grade_threshold, drop_na,
+                       drop_students, drop_threshold, drop_na,
                        open_chart):
     """Prepare course grades for FSC submission.
     \b
-    Downloads grades from a canvas course and convert them to the format
+    Download grades from a canvas course and convert them to the format
     required by the FSC for submission of final grades.
 
-    Drops students with missing info or 0 grade by default.
+    Grades are rounded to whole percentages and capped at 100.
+    Students with missing info or 0 grade are dropped by default.
 
     A CSV file is saved in the current directory,
     which can be uploaded directly to FSC.
-
     A grade distribution chart is saved in the current directory.
 
     \b
@@ -89,12 +89,12 @@ def prepare_fsc_grades(course_id, filename, api_url, student_status,
         canvascli prepare_fsc_grades --course-id 53665 --drop-students "43659202"
     """
     fsc_grades = FscGrades(
-        course_id, filename, api_url, student_status, drop_student_numbers,
-        drop_grade_threshold, drop_na, open_chart)
+        course_id, filename, api_url, student_status, drop_students,
+        drop_threshold, drop_na, open_chart)
     fsc_grades.connect_to_canvas()
     fsc_grades.connect_to_course()
     fsc_grades.get_canvas_grades()
-    fsc_grades.drop_students()
+    fsc_grades.drop_student_entries()
     fsc_grades.convert_grades_to_fsc_format()
     fsc_grades.save_fsc_grades_to_file()
     fsc_grades.plot_fsc_grade_distribution()
@@ -197,8 +197,8 @@ class FscGrades(CanvasConnection):
     filename: str
     api_url: str
     student_status: str
-    drop_student_numbers: str
-    drop_grade_threshold: int
+    drop_students: str
+    drop_threshold: int
     drop_na: bool
     open_chart: bool
     unauthorized_course_access_msg: str = (
@@ -235,14 +235,14 @@ class FscGrades(CanvasConnection):
         self.canvas_grades = pd.DataFrame(canvas_grades)
         return
 
-    def drop_students(self):
+    def drop_student_entries(self):
         """Drop unwanted students entries such as test students and dropouts."""
         # Drop students under the grade thresholds
         # Test accounts and students who dropped the course often have a grade of zero
         dropped_students = self.canvas_grades.query(
-            '`Percent Grade` <= @self.drop_grade_threshold')
+            '`Percent Grade` <= @self.drop_threshold')
         self.canvas_grades = self.canvas_grades.query(
-            '`Percent Grade` > @self.drop_grade_threshold').copy()
+            '`Percent Grade` > @self.drop_threshold').copy()
 
         # Drop students that have missing info in any field
         # These are also printed so that it is clear to the user what has happened
@@ -254,17 +254,17 @@ class FscGrades(CanvasConnection):
             self.canvas_grades = self.canvas_grades.dropna()
 
         # Drop students explicitly
-        if self.drop_student_numbers is not None:
+        if self.drop_students is not None:
             dropped_students = dropped_students.append(
                 self.canvas_grades.query(
-                    '`Student Number` in @self.drop_student_numbers.split()'))
+                    '`Student Number` in @self.drop_students.split()'))
             self.canvas_grades = self.canvas_grades.query(
-                '`Student Number` not in @self.drop_student_numbers.split()').copy()
+                '`Student Number` not in @self.drop_students.split()').copy()
 
         # Display the dropped students so the user can catch errors easily
         if dropped_students.shape[0] > 0:
             click.echo(f'Dropping {dropped_students.shape[0]} student(s) with'
-                       f' missing information or a grade <= {self.drop_grade_threshold}:\n')
+                       f' missing information or a grade <= {self.drop_threshold}:\n')
             click.echo(dropped_students.to_markdown(index=False))
             click.echo()
         return
