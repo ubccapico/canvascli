@@ -90,7 +90,7 @@ you can run the following command
 
 ### Zsh
 
-First make sure that your zsh general shell completion enabled
+> First make sure that your zsh general shell completion enabled
 by adding `autoload -Uz compinit && compinit` to your `.zshrc`;
 it is important that this line is added before running the command below.
 
@@ -100,7 +100,7 @@ curl -Ss https://raw.githubusercontent.com/joelostblom/canvascli/main/canvascli-
 
 ### Bash
 
-Bash shell completion requires bash >= 4.0
+> Bash shell completion requires bash >= 4.0
 (notably macOS ships with 3.x so use zsh instead).
 If you are using GitBash for Windows,
 change `.bashrc` to `.bash_profile` in the command below,
