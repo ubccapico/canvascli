@@ -6,7 +6,9 @@ for final submission to the FSC at UBC.
 
 ## Installation
 
-`canvascli` can be installed via `pip install git+https://github.com/joelostblom/canvascli`.
+`canvascli` can be installed via `pip install git+https://github.com/joelostblom/canvascli`
+(currently another package exists with this name on PyPI,
+so please install directly from GitHub instead for the time being).
 
 ## Usage
 
