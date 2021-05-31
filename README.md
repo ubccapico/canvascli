@@ -81,11 +81,12 @@ to view all available options.
 
 ## Shell completion
 
-You can set up shell completion for `canvascli` subcommands and options
-by saving the relevant completion file from the repo
-and sourcing it in your terminals configuration file.
+If you want subcommands and options to complete when you press <kbd>TAB</kbd>
+you can download the corresponding completion file
+from the GitHub repository
+and source it in your terminal's configuration file.
 If you don't want to do this manually,
-you can run the following command
+you can run one of the following commands
 (don't forget to restart your shell afterwards).
 
 ### Zsh
