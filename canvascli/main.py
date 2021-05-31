@@ -7,7 +7,7 @@ import altair as alt
 import click
 import pandas as pd
 from canvasapi import Canvas
-from canvasapi.exceptions import InvalidAccessToken
+from canvasapi.exceptions import InvalidAccessToken, Unauthorized
 # Using https://github.com/biqqles/dataclassy instead of dataclasses from
 # stdlibto allow for dataclass inheritance when there are default values. Could
 # use a custom init but it gets messy and the advantage of using dataclasses is
@@ -196,6 +196,9 @@ class FscGrades(CanvasConnection):
     drop_grade_threshold: int
     drop_na: bool
     open_chart: bool
+    unauthorized_course_access_msg: str = (
+        '\nYour API token is not authorized to access course {}.'
+        '\nRun `canvascli show-courses` to see all courses you can access.')
 
     def connect_to_course(self):
         """Connect to as specific canvas course."""
@@ -206,6 +209,8 @@ class FscGrades(CanvasConnection):
             raise SystemExit(self.invalid_canvas_url_msg)
         except InvalidAccessToken:
             raise SystemExit(self.invalid_canvas_api_token_msg.format(self.api_token))
+        except Unauthorized:
+            raise SystemExit(self.unauthorized_course_access_msg.format(self.course_id))
         if self.filename is None:
             self.filename = (f'fsc-grades_{self.course.course_code.replace(" ", "-")}'
                              .replace('/', '-'))
