@@ -66,9 +66,20 @@ def cli():
 @click.option('--open-chart', default=None, type=bool, help='Whether to open'
               ' the grade distribution chart automatically.'
               ' Default: Ask at the end')
+@click.option('--override-campus', default=None, help='Override the automatically'
+              ' detected course campus in the CSV file with this text. Default: None')
+@click.option('--override-course', default=None, help='Override the automatically'
+              ' detected course title in the CSV file with this text. Default: None')
+@click.option('--override-section', default=None, help='Override the automatically'
+              ' detected course section in the CSV file with this text. Default: None')
+@click.option('--override-session', default=None, help='Override the automatically'
+              ' detected course session in the CSV file with this text. Default: None')
+@click.option('--override-subject', default=None, help='Override the automatically'
+              ' detected course subject in the CSV file with this text. Default: None')
 def prepare_fsc_grades(course_id, filename, api_url, student_status,
                        drop_students, drop_threshold, drop_na,
-                       open_chart):
+                       open_chart, override_campus, override_course,
+                       override_section, override_session, override_subject):
     """Prepare course grades for FSC submission.
     \b
     Download grades from a canvas course and convert them to the format
@@ -91,7 +102,8 @@ def prepare_fsc_grades(course_id, filename, api_url, student_status,
     """
     fsc_grades = FscGrades(
         course_id, filename, api_url, student_status, drop_students,
-        drop_threshold, drop_na, open_chart)
+        drop_threshold, drop_na, open_chart, override_campus,
+        override_course, override_section, override_session, override_subject)
     fsc_grades.connect_to_canvas()
     fsc_grades.connect_to_course()
     fsc_grades.get_canvas_grades()
@@ -202,6 +214,11 @@ class FscGrades(CanvasConnection):
     drop_threshold: int
     drop_na: bool
     open_chart: bool
+    override_campus: str
+    override_course: str
+    override_section: str
+    override_session: str
+    override_subject: str
     unauthorized_course_access_msg: str = (
         '\nYour API token is not authorized to access course {}.'
         '\nRun `canvascli show-courses` to see all courses you can access.')
@@ -225,7 +242,8 @@ class FscGrades(CanvasConnection):
     def get_canvas_grades(self):
         """Download grades from a canvas course."""
         click.echo('Downloading student grades...')
-        enrollments = self.course.get_enrollments(type=['StudentEnrollment'], state=[self.student_status])
+        enrollments = self.course.get_enrollments(
+            type=['StudentEnrollment'], state=[self.student_status])
         canvas_grades = defaultdict(list)
         for enrollment in enrollments:
             canvas_grades['Student Number'].append(enrollment.user['sis_user_id'])
@@ -279,6 +297,16 @@ class FscGrades(CanvasConnection):
         self.fsc_grades = self.canvas_grades.copy()
         self.fsc_grades[['Subject', 'Course', 'Section', 'Session']] = self.course.course_code.split()
         self.fsc_grades[['Campus', 'Standing', 'Standing Reason']] = ['UBC', '', '']
+        if self.override_campus is not None:
+            self.fsc_grades['Campus'] = self.override_campus
+        if self.override_course is not None:
+            self.fsc_grades['Course'] = self.override_course
+        if self.override_section is not None:
+            self.fsc_grades['Section'] = self.override_section
+        if self.override_session is not None:
+            self.fsc_grades['Session'] = self.override_session
+        if self.override_subject is not None:
+            self.fsc_grades['Subject'] = self.override_subject
         # Reorder columns to match the required FSC format
         self.fsc_grades = self.fsc_grades[[
             'Session', 'Campus', 'Student Number', 'Subject', 'Course', 'Section',
