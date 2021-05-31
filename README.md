@@ -105,7 +105,10 @@ change `.bashrc` to `.bash_profile` in the command above,
 and note that you will only get shell completion after typing `cavascli`,
 not `canvascli.exe`.
 
-## Contributing
+## Questions and contributing
 
-Contributions are welcome!
-Please [read the guidelines](CONTRIBUTING.md).
+Questions and contributions are welcome!
+The best way to get in touch is to
+[open a new issue or discussion](https://github.com/joelostblom/canvascli/issues/new/choose).
+Remember to follow the [Code of conduct](CODE_OF_CONDUCT.md)
+when you participate in this project.
