@@ -96,16 +96,16 @@ curl -Ss https://raw.githubusercontent.com/joelostblom/canvascli/main/canvascli-
 
 ### Bash
 
-```sh
-curl -Ss https://raw.githubusercontent.com/joelostblom/canvascli/main/canvascli-complete.bash > ~/.canvascli-complete.bash && echo ". ~/.canvascli-complete.bash" >> ~/.bashrc
-```
-
 Bash shell completion requires bash >= 4.0
 (notably macOS ships with 3.x so use zsh instead).
 If you are using GitBash for Windows,
-change `.bashrc` to `.bash_profile` in the command above,
+change `.bashrc` to `.bash_profile` in the command below,
 and note that you will only get shell completion after typing `cavascli`,
 not `canvascli.exe`.
+
+```sh
+curl -Ss https://raw.githubusercontent.com/joelostblom/canvascli/main/canvascli-complete.bash > ~/.canvascli-complete.bash && echo ". ~/.canvascli-complete.bash" >> ~/.bashrc
+```
 
 ## Questions and contributing
 
