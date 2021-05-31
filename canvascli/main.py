@@ -1,3 +1,6 @@
+"""A CLI to reformat and review Canvas grades.
+See the README and class docstrings for more info.
+"""
 import getpass
 import os
 from collections import defaultdict
@@ -137,7 +140,7 @@ def z_review_student_grades():
 
 @dataclass
 class CanvasConnection():
-    """Parent class to facilitate sharing objects between functions."""
+    """Parent class for initializing attributes shared between child classes."""
     invalid_canvas_url_msg: str = (
         '\nThe canvas URL you specified is invalid,'
         ' Please supply a URL in the folowing format: https://canvas.ubc.ca')
@@ -159,7 +162,7 @@ class CanvasConnection():
 
 @dataclass
 class AccessibleCourses(CanvasConnection):
-    """TODO Parent class to facilitate sharing objects between functions."""
+    """Show all courses accessible from a specific API token."""
     api_url: str
     filter_: str
 
@@ -189,7 +192,7 @@ class AccessibleCourses(CanvasConnection):
 
 @dataclass
 class FscGrades(CanvasConnection):
-    """TODO Parent class to facilitate sharing objects between functions."""
+    """Prepare FSC grades for a specific course."""
     course_id: int
     filename: str
     api_url: str
