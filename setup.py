@@ -10,7 +10,7 @@ setup(
     install_requires=[
         'altair',
         'canvasapi',
-        'click',
+        'click>=8.0.0',
         'pandas',
         'tabulate',
         'dataclassy'
