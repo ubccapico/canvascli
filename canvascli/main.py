@@ -167,8 +167,8 @@ class CanvasConnection():
         click.echo('\nConnecting to canvas...')
         self.api_token = os.environ.get("CANVAS_PAT")
         if self.api_token is None:
-            click.echo('Paste your canvas API token and press enter:')
-            self.api_token = getpass.getpass()
+            self.api_token = getpass.getpass(
+                'Paste your canvas API token and press enter:')
         self.canvas = Canvas(self.api_url, self.api_token)
         return
 
