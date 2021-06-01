@@ -16,8 +16,9 @@ All `canvascli` functionality requires that you have [created an Canvas API acce
 token](https://community.canvaslms.com/t5/Instructor-Guide/How-do-I-manage-API-access-tokens-as-an-instructor/ta-p/1177),
 so do that first if you don't have one already.
 Typing `canvascli` at the command prompt will show the general help message
-with the available sub-commands:
+including the available sub-commands.
 
+<!--
 ```text
 Usage: canvascli [OPTIONS] COMMAND [ARGS]...
 
@@ -43,10 +44,7 @@ Commands:
   prepare-fsc-grades       Prepare course grades for FSC submission.
   show-courses             Show courses accessible by the given API token.
 ```
-
-> Note that if you are using GitBash's default terminal on Windows,
-you will not be able to paste your Canvas API token
-and need to define the environmental variable instead.
+-->
 
 The most common use case
 is probably to prepare final grades for FSC submission,
@@ -58,7 +56,7 @@ canvascli prepare-fsc-grades --course-id 53665
 
 This will save a CSV file in the current directory
 which can be uploaded to the FSC.
-This file should automatically be correctly formatted,
+The file should automatically be correctly formatted,
 but it is a good idea to double check
 in case there are unexpected changes
 to how UBC inputs course info on Canvas.
@@ -78,6 +76,12 @@ This will output a table with all the courses
 your API token has access to.
 Run `canvascli show-courses --help`
 to view all available options.
+
+> If you don't want to be prompted for your Canvas API token each time,
+you can save it to an environmental variable named CANVAS_PAT
+(if you are using GitBash's default terminal on Windows,
+you will not be able to paste into the `canvascli` prompt
+and defining the environmental variable is required).
 
 ## Shell completion
 
@@ -117,5 +121,5 @@ curl -Ss https://raw.githubusercontent.com/joelostblom/canvascli/main/canvascli-
 Questions and contributions are welcome!
 The best way to get in touch is to
 [open a new issue or discussion](https://github.com/joelostblom/canvascli/issues/new/choose).
-Remember to follow the [Code of conduct](CODE_OF_CONDUCT.md)
+Remember to follow the [Code of Conduct](CODE_OF_CONDUCT.md)
 when you participate in this project.
