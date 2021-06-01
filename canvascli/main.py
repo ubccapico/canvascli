@@ -290,23 +290,29 @@ class FscGrades(CanvasConnection):
 
     def convert_grades_to_fsc_format(self):
         """Convert grades to FSC format."""
-        # Add required FSC info
-        # This could be made more flexible in the future if needed, but LT hub
-        # mentioned that these fields should be safe to extract from the canvas
-        # course code (for UBC courses in general).
-        self.fsc_grades = self.canvas_grades.copy()
-        self.fsc_grades[['Subject', 'Course', 'Section', 'Session']] = self.course.course_code.split()
-        self.fsc_grades[['Campus', 'Standing', 'Standing Reason']] = ['UBC', '', '']
+        # Extract FSC info from canvas
+        # LT hub mentioned that these fields should be safe to extract from the
+        # canvas course code (for UBC courses in general), but there is an override
+        # option just in case
+        self.campus = 'UBC'
+        self.subject, self.course, self.section, self.session = self.course.course_code.split()
         if self.override_campus is not None:
-            self.fsc_grades['Campus'] = self.override_campus
+            self.campus = self.override_campus
         if self.override_course is not None:
-            self.fsc_grades['Course'] = self.override_course
+            self.course = self.override_course
         if self.override_section is not None:
-            self.fsc_grades['Section'] = self.override_section
+            self.section = self.override_section
         if self.override_session is not None:
-            self.fsc_grades['Session'] = self.override_session
+            self.session = self.override_session
         if self.override_subject is not None:
-            self.fsc_grades['Subject'] = self.override_subject
+            self.subject = self.override_subject
+        # Add FSC info to the dataframe, standing and standing reason are
+        # blank by default and filled out manually when needed
+        self.fsc_grades = self.canvas_grades.copy()
+        fsc_fields = ['Campus', 'Course', 'Section', 'Session', 'Subject',
+                      'Standing', 'Standing Reason']
+        self.fsc_grades[fsc_fields] = (
+            self.campus, self.course, self.section, self.session, self.subject, '', '')
         # Reorder columns to match the required FSC format
         self.fsc_grades = self.fsc_grades[[
             'Session', 'Campus', 'Student Number', 'Subject', 'Course', 'Section',
