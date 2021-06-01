@@ -334,29 +334,38 @@ class FscGrades(CanvasConnection):
 
     def plot_fsc_grade_distribution(self):
         """Create a histogram and interactive strip chart for the grade distribution"""
-        hist = alt.Chart(self.fsc_grades, height=200).mark_bar().encode(
-            alt.X('Percent Grade', bin=True),
-            alt.Y('count()'))
-        strip = alt.Chart(self.fsc_grades, height=50).mark_point(size=20).transform_calculate(
-            # Generate Gaussian jitter with a Box-Muller transform
-            jitter='sqrt(-2*log(random()))*cos(2*PI*random())',
-            Name='datum["Preferred Name"] + " " + datum["Surname"]'
-        ).encode(
-            alt.X('Percent Grade', scale=alt.Scale(zero=False)),
-            alt.Y('jitter:Q', scale=alt.Scale(nice=True), axis=alt.Axis(
-                domain=True, title='', labels=False, ticks=False, grid=False)),
-            alt.Tooltip(['Name:N', 'Student Number', 'Percent Grade'])).interactive()
-        chart = hist & strip
+        hist = (
+            alt.Chart(self.fsc_grades, height=200).mark_bar().encode(
+                alt.X('Percent Grade', bin=True, title='', axis=alt.Axis(labels=False)),
+                alt.Y('count()', title='Number of students')))
+        strip = (
+            alt.Chart(self.fsc_grades, height=60)
+            .mark_point(size=20)
+            .transform_calculate(
+                # Generate Gaussian jitter with a Box-Muller transform
+                jitter='sqrt(-2*log(random()))*cos(2*PI*random())',
+                Name='datum["Preferred Name"] + " " + datum["Surname"]')
+            .encode(
+                alt.X('Percent Grade', scale=alt.Scale(zero=False, nice=False, padding=5)),
+                alt.Y('jitter:Q', scale=alt.Scale(padding=2), axis=alt.Axis(
+                    domain=False, title='', labels=False, ticks=False, grid=False)),
+                alt.Tooltip(['Name:N', 'Student Number', 'Percent Grade']))
+            .interactive())
         title = alt.TitleParams(
-            text='Grade distribution',
+            text=f'Grade distribution {self.subject} {self.course}',
             subtitle=[
                 'Hover over the points to see the student name and grade.',
                 'Zoom with the mouse wheel and double click to reset the view.',
                 'Click the three dots button to the right to save the plot.'])
         chart_filename = self.filename + '.html'
-        chart.properties(title=title).save(chart_filename)
+        (alt.vconcat(hist, strip, spacing=0)
+            .properties(title=title)
+            .resolve_scale(x='shared')
+            .configure_view(strokeWidth=0)
+            .save(chart_filename))
         click.echo(f'Grade distribution chart saved to {chart_filename}.')
-        if self.open_chart or self.open_chart is None and click.confirm('Open grade distribution chart?', default=True):
+        if self.open_chart or self.open_chart is None and click.confirm(
+                'Open grade distribution chart?', default=True):
             click.launch(chart_filename)
         return
 
