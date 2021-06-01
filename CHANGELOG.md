@@ -8,7 +8,7 @@ Note that major version zero (0.y.z) is for initial development and anything may
 ## [Unreleased]
 
 ### Added
-- Easier to read visualizations
+- More readable visualizations
 
 ## [0.3.0] - 2021-05-31
 
