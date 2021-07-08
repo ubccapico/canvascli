@@ -245,13 +245,25 @@ class FscGrades(CanvasConnection):
         enrollments = self.course.get_enrollments(
             type=['StudentEnrollment'], state=[self.student_status])
         canvas_grades = defaultdict(list)
+        overridden_grades = []
         for enrollment in enrollments:
             canvas_grades['Student Number'].append(enrollment.user['sis_user_id'])
             surname, preferred_name = enrollment.user['sortable_name'].split(', ')
             canvas_grades['Surname'].append(surname)
             canvas_grades['Preferred Name'].append(preferred_name)
-            canvas_grades['Percent Grade'].append(enrollment.grades['final_score'])
+            if 'override_score' in enrollment.grades:
+                overridden_grades.append(
+                    f"{preferred_name:<12} {surname:<12}"
+                    f" {enrollment.grades['final_score']:<4} ->"
+                    f" {enrollment.grades['override_score']}")
+                canvas_grades['Percent Grade'].append(enrollment.grades['override_score'])
+            else:
+                canvas_grades['Percent Grade'].append(enrollment.grades['final_score'])
         self.canvas_grades = pd.DataFrame(canvas_grades)
+        if len(overridden_grades) > 0:
+            click.echo('Students with manual Canvas override of their final grade:')
+            [click.echo(grade) for grade in overridden_grades]
+            click.echo()
         return
 
     def drop_student_entries(self):

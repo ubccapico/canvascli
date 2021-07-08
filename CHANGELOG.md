@@ -5,6 +5,11 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 Version number is based on [Semver](https://semver.org/).
 Note that major version zero (0.y.z) is for initial development and anything may change at any time.
 
+## [0.3.2] - 2021-07-07
+
+### Added
+- Support for the Canvas override final grade column.
+
 ## [0.3.1] - 2021-06-01
 
 ### Added
