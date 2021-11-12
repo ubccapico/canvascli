@@ -259,6 +259,11 @@ class FscGrades(CanvasConnection):
                 canvas_grades['Percent Grade'].append(enrollment.grades['override_score'])
             else:
                 canvas_grades['Percent Grade'].append(enrollment.grades['final_score'])
+            if 'unposted_final_score' in enrollment.grades:
+                if enrollment.grades['unposted_final_score'] != enrollment.grades['final_score']:
+                    click.echo(
+                        'There are unposted assignments that would change the final score of '
+                        + f'{preferred_name} {surname}. Please post all assignments on Canvas.')
         self.canvas_grades = pd.DataFrame(canvas_grades)
         if len(overridden_grades) > 0:
             click.echo('Students with manual Canvas override of their final grade:')
