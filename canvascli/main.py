@@ -355,7 +355,7 @@ class FscGrades(CanvasConnection):
         """Create a histogram and interactive strip chart for the grade distribution"""
         hist = (
             alt.Chart(self.fsc_grades, height=200).mark_bar().encode(
-                alt.X('Percent Grade', bin=True, title='', axis=alt.Axis(labels=False)),
+                alt.X('Percent Grade', bin=alt.Bin(maxbins=15), title='', axis=alt.Axis(labels=False)),
                 alt.Y('count()', title='Number of students')))
         strip = (
             alt.Chart(self.fsc_grades, height=60)
