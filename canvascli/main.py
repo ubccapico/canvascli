@@ -323,6 +323,8 @@ class FscGrades(CanvasConnection):
         self.fsc_grades = self.canvas_grades.copy()
         fsc_fields = ['Campus', 'Course', 'Section', 'Session', 'Subject',
                       'Standing', 'Standing Reason']
+        # Remove the session number which is only present on Canvas but not FSC
+        self.session = self.session[:-1]
         self.fsc_grades[fsc_fields] = (
             self.campus, self.course, self.section, self.session, self.subject, '', '')
         # Reorder columns to match the required FSC format
