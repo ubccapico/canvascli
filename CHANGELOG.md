@@ -5,6 +5,15 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 Version number is based on [Semver](https://semver.org/).
 Note that major version zero (0.y.z) is for initial development and anything may change at any time.
 
+## [0.3.3] - 2021-11-12
+
+### Added
+- Warn when there are unposted canvas assignment
+
+### Fixed
+- Remove suffix number in session since this is not used in the FSC.
+- Change to a more suitable number of histogram bins.
+
 ## [0.3.2] - 2021-07-07
 
 ### Added
