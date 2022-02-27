@@ -339,6 +339,9 @@ class FscGrades(CanvasConnection):
         # Using Decimal to always round up .5 instead of rounding to even,
         # which is the default in numpy but could seem unfair to individual students.
         # The Decimal type is not json serializable (issue for altair) so changing to int.
+        self.raw_percent_grade = self.fsc_grades[['Percent Grade', 'Student Number']].rename(
+            columns={'Percent Grade': 'Raw Percent Grade'}
+        )
         self.fsc_grades['Percent Grade'] = self.fsc_grades['Percent Grade'].apply(
             lambda x: Decimal(x).quantize(0, rounding=ROUND_HALF_UP)).astype(int)
         # Cap grades at 100
@@ -352,36 +355,104 @@ class FscGrades(CanvasConnection):
         return
 
     def plot_fsc_grade_distribution(self):
-        """Create a histogram and interactive strip chart for the grade distribution"""
-        hist = (
-            alt.Chart(self.fsc_grades, height=200).mark_bar().encode(
-                alt.X('Percent Grade', bin=alt.Bin(maxbins=15), title='', axis=alt.Axis(labels=False)),
-                alt.Y('count()', title='Number of students')))
+        # Prepare dataframe for filtering via Altair selection elements
+        self.fsc_grades_for_viz = self.fsc_grades.merge(
+            self.raw_percent_grade,
+            on='Student Number'
+        ).rename(
+            columns={
+                'Percent Grade': 'FSC Rounded',
+                'Raw Percent Grade': 'Raw'
+            }
+        ).melt(
+            id_vars=['Preferred Name', 'Surname', 'Student Number'],
+            value_vars=['FSC Rounded', 'Raw'],
+            value_name='Percent Grade',
+            var_name='Percent Type'
+        )
+
+        # Set up selection elements
+        percent_type_dropdown = alt.binding_select(
+            options=self.fsc_grades_for_viz['Percent Type'].unique(),
+            name='Percent Type '
+        )
+        percent_type_selection = alt.selection_single(
+            fields=['Percent Type'],
+            bind=percent_type_dropdown,
+            init={'Percent Type': 'FSC Rounded'}
+        )
+
+        # Plot distribution
+        hist = alt.Chart(self.fsc_grades_for_viz, height=200).mark_bar().encode(
+            alt.X('Percent Grade', bin=alt.Bin(maxbins=15), title='', axis=alt.Axis(labels=False)),
+            alt.Y('count()', title='Number of students')
+        )
+
+        # Plot all observations
         strip = (
-            alt.Chart(self.fsc_grades, height=60)
+            alt.Chart(self.fsc_grades_for_viz, height=70)
             .mark_point(size=20)
             .transform_calculate(
                 # Generate Gaussian jitter with a Box-Muller transform
                 jitter='sqrt(-2*log(random()))*cos(2*PI*random())',
                 Name='datum["Preferred Name"] + " " + datum["Surname"]')
             .encode(
-                alt.X('Percent Grade', scale=alt.Scale(zero=False, nice=False, padding=5)),
+                alt.X('Percent Grade', scale=alt.Scale(zero=False, nice=False, padding=5), title='Percent Grade'),
                 alt.Y('jitter:Q', scale=alt.Scale(padding=2), axis=alt.Axis(
                     domain=False, title='', labels=False, ticks=False, grid=False)),
                 alt.Tooltip(['Name:N', 'Student Number', 'Percent Grade']))
             .interactive())
+
+        # Plot central tendencies
+        mean_point = alt.Chart(self.fsc_grades_for_viz).mark_point(
+            color='coral',
+            size=50,
+            shape='diamond',
+        ).transform_calculate(
+            jitter='-3.1',
+        ).encode(
+            x='mean(Percent Grade)',
+            y='mean(jitter):Q',
+            tooltip=[alt.Tooltip('mean(Percent Grade)', format='.3g')],
+        )
+        median_point = mean_point.mark_point(
+            color='rebeccapurple',
+            size=50,
+            shape='diamond',
+        ).encode(
+            x='median(Percent Grade)',
+            tooltip=[alt.Tooltip('median(Percent Grade)', format='.3g')],
+        )
+
+        # Add instructions
         title = alt.TitleParams(
             text=f'Grade distribution {self.subject} {self.course}',
             subtitle=[
                 'Hover over the points to see the student name and grade.',
                 'Zoom with the mouse wheel and double click to reset the view.',
                 'Click the three dots button to the right to save the plot.'])
+
+        # Concatenate, add filters, and save the chart
         chart_filename = self.filename + '.html'
-        (alt.vconcat(hist, strip, spacing=0)
-            .properties(title=title)
-            .resolve_scale(x='shared')
-            .configure_view(strokeWidth=0)
-            .save(chart_filename))
+        alt.vconcat(
+            hist,
+            # strip on top so that individual observations are always visible
+            mean_point + median_point + strip,
+            spacing=0
+        ).properties(
+            title=title
+        ).resolve_scale(
+            x='shared'
+        ).configure_view(
+            strokeWidth=0
+        ).transform_filter(
+            percent_type_selection
+        ).add_selection(
+            percent_type_selection
+        ).save(
+            chart_filename
+        )
+
         click.echo(f'Grade distribution chart saved to {chart_filename}.')
         if self.open_chart or self.open_chart is None and click.confirm(
                 'Open grade distribution chart?', default=True):
