@@ -109,9 +109,12 @@ def prepare_fsc_grades(course_id, filename, api_url, student_status,
     fsc_grades.get_canvas_grades()
     fsc_grades.drop_student_entries()
     fsc_grades.convert_grades_to_fsc_format()
-    fsc_grades.save_fsc_grades_to_file()
-    fsc_grades.plot_fsc_grade_distribution()
-    fsc_grades.show_manual_grade_entry_note()
+    if fsc_grades.fsc_grades.empty:
+        click.echo('Did not find any assigned grades, exiting.')
+    else:
+        fsc_grades.save_fsc_grades_to_file()
+        fsc_grades.plot_fsc_grade_distribution()
+        fsc_grades.show_manual_grade_entry_note()
     return
 
 
