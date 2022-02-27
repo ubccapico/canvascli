@@ -389,19 +389,33 @@ class FscGrades(CanvasConnection):
         )
 
         # Plot all observations
-        strip = (
-            alt.Chart(self.fsc_grades_for_viz, height=70)
-            .mark_point(size=20)
-            .transform_calculate(
-                # Generate Gaussian jitter with a Box-Muller transform
-                jitter='sqrt(-2*log(random()))*cos(2*PI*random())',
-                Name='datum["Preferred Name"] + " " + datum["Surname"]')
-            .encode(
-                alt.X('Percent Grade', scale=alt.Scale(zero=False, nice=False, padding=5), title='Percent Grade'),
-                alt.Y('jitter:Q', scale=alt.Scale(padding=2), axis=alt.Axis(
-                    domain=False, title='', labels=False, ticks=False, grid=False)),
-                alt.Tooltip(['Name:N', 'Student Number', 'Percent Grade']))
-            .interactive())
+        strip = alt.Chart(self.fsc_grades_for_viz, height=70).mark_point(
+            size=20
+        ).transform_calculate(
+            # Generate Gaussian jitter with a Box-Muller transform
+            jitter='sqrt(-2*log(random()))*cos(2*PI*random())',
+            Name='datum["Preferred Name"] + " " + datum["Surname"]'
+        ).encode(
+            alt.X('Percent Grade',
+                title='Percent Grade',
+                scale=alt.Scale(
+                    zero=False,
+                    nice=False,
+                    padding=5
+                )
+            ),
+            alt.Y('jitter:Q',
+                scale=alt.Scale(padding=2),
+                axis=alt.Axis(
+                    domain=False,
+                    title='',
+                    labels=False,
+                    ticks=False,
+                    grid=False
+                )
+            ),
+            alt.Tooltip(['Name:N', 'Student Number', 'Percent Grade'])
+        ).interactive()
 
         # Plot central tendencies
         mean_point = alt.Chart(self.fsc_grades_for_viz).mark_point(
@@ -430,7 +444,8 @@ class FscGrades(CanvasConnection):
             subtitle=[
                 'Hover over the points to see the student name and grade.',
                 'Zoom with the mouse wheel and double click to reset the view.',
-                'Click the three dots button to the right to save the plot.'])
+                'Click the three dots button to the right to save the plot.']
+        )
 
         # Concatenate, add filters, and save the chart
         chart_filename = self.filename + '.html'
