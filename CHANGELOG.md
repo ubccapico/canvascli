@@ -8,17 +8,21 @@ Note that major version zero (0.y.z) is for initial development and anything may
 ## [Unreleased]
 
 ### Added
-- Show mean and median grade in plot
-- Add selection to show raw percentage in the plot
-- Visualize unposted student grades
+- Show mean and median grade in plot.
+- Add selection to show raw percentage in the plot.
+- Visualize unposted student grades.
+
+### Changed
+- The grade drop threshold now applies to the unposted score.
+  rather than the posted score.
 
 ### Fixed
-- Make final notes easier to read
+- Make end note easier to read.
 
 ## [0.3.3] - 2021-11-12
 
 ### Added
-- Warn when there are unposted canvas assignment
+- Warn when there are unposted canvas assignment.
 
 ### Fixed
 - Remove suffix number in session since this is not used in the FSC.
@@ -33,7 +37,7 @@ Note that major version zero (0.y.z) is for initial development and anything may
 
 ### Added
 - canvascli is now on PyPI!
-- More readable visualizations
+- More readable visualizations.
 
 ## [0.3.0] - 2021-05-31
 
@@ -48,7 +52,7 @@ Note that major version zero (0.y.z) is for initial development and anything may
 ## [0.2.1] - 2021-05-30
 
 ### Fixed
-- Raise useful message upon unauthorized course access
+- Raise useful message upon unauthorized course access.
 
 ## [0.2.0] - 2021-05-30
 

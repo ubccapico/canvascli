@@ -277,9 +277,9 @@ class FscGrades(CanvasConnection):
         # Drop students under the grade thresholds
         # Test accounts and students who dropped the course often have a grade of zero
         dropped_students = self.canvas_grades.query(
-            '`Percent Grade` <= @self.drop_threshold')
+            '`Unposted Percent Grade` <= @self.drop_threshold')
         self.canvas_grades = self.canvas_grades.query(
-            '`Percent Grade` > @self.drop_threshold').copy()
+            '`Unposted Percent Grade` > @self.drop_threshold').copy()
 
         # Drop students that have missing info in any field
         # These are also printed so that it is clear to the user what has happened
