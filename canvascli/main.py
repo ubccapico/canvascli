@@ -477,11 +477,12 @@ class FscGrades(CanvasConnection):
     def show_manual_grade_entry_note(self):
         """Show disclaimer and note about manual grade entry of student standings."""
         click.echo(
-            '\nNote:\nThe saved CSV file should automatically be correctly formatted,'
-            '\nbut it is a good idea to double check in case there are unexpected changes'
-            '\nto how UBC inputs course info on Canvas.'
-            '\nIf you have students that did not take the final exam'
-            '\nor with a thesis in progress, you will need to enter this info manually.'
-            '\nPlease see https://facultystaff.students.ubc.ca/files/FSCUserGuide.pdf'
-            '\nunder "Acceptable Values for Grades Entry" for how to modify the CSV file.')
+            '\nNote:'
+            '\n1. The saved CSV file should automatically be correctly formatted,'
+            '\n   but it is your responsibility to double check in case there are unexpected changes'
+            '\n   to how UBC inputs course info on Canvas.'
+            '\n2. If you have students that did not take the final exam'
+            '\n   or with a thesis in progress, you will need to enter this info manually.'
+            '\n   Please see https://facultystaff.students.ubc.ca/files/FSCUserGuide.pdf'
+            '\n   under "Acceptable Values for Grades Entry" for how to modify the CSV file.')
         return
