@@ -260,6 +260,7 @@ class FscGrades(CanvasConnection):
             else:
                 canvas_grades['Percent Grade'].append(enrollment.grades['final_score'])
             if 'unposted_final_score' in enrollment.grades:
+                canvas_grades['Unposted Percent Grade'].append(enrollment.grades['unposted_final_score'])
                 if enrollment.grades['unposted_final_score'] != enrollment.grades['final_score']:
                     click.echo(
                         'There are unposted assignments that would change the final score of '
@@ -326,54 +327,94 @@ class FscGrades(CanvasConnection):
         # Add FSC info to the dataframe, standing and standing reason are
         # blank by default and filled out manually when needed
         self.fsc_grades = self.canvas_grades.copy()
-        fsc_fields = ['Campus', 'Course', 'Section', 'Session', 'Subject',
+        additional_fsc_fields = ['Campus', 'Course', 'Section', 'Session', 'Subject',
                       'Standing', 'Standing Reason']
         # Remove the session number which is only present on Canvas but not FSC
         self.session = self.session[:-1]
-        self.fsc_grades[fsc_fields] = (
+        self.fsc_grades[additional_fsc_fields] = (
             self.campus, self.course, self.section, self.session, self.subject, '', '')
-        # Reorder columns to match the required FSC format
-        self.fsc_grades = self.fsc_grades[[
-            'Session', 'Campus', 'Student Number', 'Subject', 'Course', 'Section',
-            'Surname', 'Preferred Name', 'Standing', 'Standing Reason', 'Percent Grade']]
+
+        # Round to whole percentage format since FSC requires that
         # Using Decimal to always round up .5 instead of rounding to even,
         # which is the default in numpy but could seem unfair to individual students.
         # The Decimal type is not json serializable (issue for altair) so changing to int.
-        self.raw_percent_grade = self.fsc_grades[['Percent Grade', 'Student Number']].rename(
-            columns={'Percent Grade': 'Raw Percent Grade'}
-        )
+        self.fsc_grades['Exact Percent Grade'] = self.fsc_grades['Percent Grade']
         self.fsc_grades['Percent Grade'] = self.fsc_grades['Percent Grade'].apply(
             lambda x: Decimal(x).quantize(0, rounding=ROUND_HALF_UP)).astype(int)
+
+        self.fsc_grades['Unposted Exact Percent Grade'] = self.fsc_grades['Unposted Percent Grade']
+        self.fsc_grades['Unposted Percent Grade'] = self.fsc_grades['Unposted Percent Grade'].apply(
+            lambda x: Decimal(x).quantize(0, rounding=ROUND_HALF_UP)).astype(int)
+
         # Cap grades at 100
         self.fsc_grades.loc[self.fsc_grades['Percent Grade'] > 100, 'Percent Grade'] = 100
+
         return
 
     def save_fsc_grades_to_file(self):
         """Write a CSV file that can be uploaded to FSC."""
-        self.fsc_grades.to_csv(self.filename + '.csv', index=False)
+        # Reorder columns to match the required FSC format
+        self.fsc_grades[[
+            'Session', 'Campus', 'Student Number', 'Subject', 'Course', 'Section',
+            'Surname', 'Preferred Name', 'Standing', 'Standing Reason', 'Percent Grade'
+        ]].to_csv(
+            self.filename + '.csv',
+            index=False
+        )
         click.echo(f'Grades saved to {self.filename}.csv.')
         return
 
     def plot_fsc_grade_distribution(self):
         # Prepare dataframe for filtering via Altair selection elements
-        self.fsc_grades_for_viz = self.fsc_grades.merge(
-            self.raw_percent_grade,
-            on='Student Number'
-        ).rename(
-            columns={
-                'Percent Grade': 'FSC Rounded',
-                'Raw Percent Grade': 'Raw'
-            }
+        # First the rounded and raw scores are melted together separately for posted and unposted scores
+        # Then they are merged into one frame and the posted and unposted score are melted together
+        self.fsc_grades_for_viz = pd.merge(
+            # Frame 1
+            self.fsc_grades.rename(
+                columns={
+                    'Unposted Percent Grade': 'FSC Rounded',
+                    'Unposted Exact Percent Grade': 'Exact'
+                }
+            # Combine the rounded and raw *unposted* scores 
+            ).melt(
+                id_vars=['Preferred Name', 'Surname', 'Student Number'],
+                value_vars=['FSC Rounded', 'Exact'],
+                value_name='Unposted Grade',
+                var_name='Percent Type'
+            ),
+            # Frame 2
+            self.fsc_grades.rename(
+                columns={
+                    'Percent Grade': 'FSC Rounded',
+                    'Exact Percent Grade': 'Exact'
+                }
+            # Combine the rounded and raw *posted* scores 
+            ).melt(
+                id_vars=['Preferred Name', 'Surname', 'Student Number'],
+                value_vars=['FSC Rounded', 'Exact'],
+                value_name='Posted Grade',
+                var_name='Percent Type'
+            )
+        # Combine the posted and unposted scores
         ).melt(
-            id_vars=['Preferred Name', 'Surname', 'Student Number'],
-            value_vars=['FSC Rounded', 'Raw'],
+            id_vars=['Preferred Name', 'Surname', 'Student Number', 'Percent Type'],
+            value_vars=['Unposted Grade', 'Posted Grade'],
             value_name='Percent Grade',
-            var_name='Percent Type'
+            var_name='Grade Status'
         )
 
         # Set up selection elements
+        grade_status_dropdown = alt.binding_select(
+            options=['Posted Grade', 'Unposted Grade'],
+            name='Grade Status '
+        )
+        grade_status_selection = alt.selection_single(
+            fields=['Grade Status'],
+            bind=grade_status_dropdown,
+            init={'Grade Status': 'Posted Grade'}
+        )
         percent_type_dropdown = alt.binding_select(
-            options=self.fsc_grades_for_viz['Percent Type'].unique(),
+            options=['FSC Rounded', 'Exact'],
             name='Percent Type '
         )
         percent_type_selection = alt.selection_single(
@@ -461,9 +502,9 @@ class FscGrades(CanvasConnection):
         ).configure_view(
             strokeWidth=0
         ).transform_filter(
-            percent_type_selection
+                percent_type_selection & grade_status_selection
         ).add_selection(
-            percent_type_selection
+            percent_type_selection, grade_status_selection
         ).save(
             chart_filename
         )

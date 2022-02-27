@@ -10,6 +10,7 @@ Note that major version zero (0.y.z) is for initial development and anything may
 ### Added
 - Show mean and median grade in plot
 - Add selection to show raw percentage in the plot
+- Visualize unposted student grades
 
 ### Fixed
 - Make final notes easier to read
