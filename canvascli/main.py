@@ -508,7 +508,15 @@ class FscGrades(CanvasConnection):
         ).save(
             chart_filename
         )
-
+        # The label names are styled in serif by default for some reason
+        with open(chart_filename, 'a') as chart_file:
+            chart_file.write(
+                '\n<style>'
+                '\n    form.vega-bindings {'
+                '\n        font-family: sans-serif;'
+                '\n    }'
+                '\n</style>'
+            )
         click.echo(f'Grade distribution chart saved to {chart_filename}.')
         if self.open_chart or self.open_chart is None and click.confirm(
                 'Open grade distribution chart?', default=True):
