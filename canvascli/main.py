@@ -597,24 +597,29 @@ class FscGrades(CanvasConnection):
         ).interactive()
 
         # Plot central tendencies
-        mean_point = alt.Chart(self.fsc_grades_for_viz).mark_point(
-            color='coral',
-            size=50,
-            shape='diamond',
-        ).transform_calculate(
-            jitter='-3.1',
+        central_tendencies = alt.Chart(
+                self.fsc_grades_for_viz
+            ).transform_aggregate(
+                Mean='mean(Percent Grade)',
+                Median='median(Percent Grade)',
+            ).transform_fold(
+                fold=['Mean', 'Median'],
+                as_=['Type', 'Percent Grade']
+            ).transform_calculate(
+                y='-3.05',
+            ).mark_point(
+            size=65,
+            shape='diamond'
         ).encode(
-            x='mean(Percent Grade)',
-            y='mean(jitter):Q',
-            tooltip=[alt.Tooltip('mean(Percent Grade)', format='.3g')],
-        )
-        median_point = mean_point.mark_point(
-            color='rebeccapurple',
-            size=50,
-            shape='diamond',
-        ).encode(
-            x='median(Percent Grade)',
-            tooltip=[alt.Tooltip('median(Percent Grade)', format='.3g')],
+            x='Percent Grade:Q',
+            y='y:Q',
+            color=alt.Color(
+                'Type:N',
+                title='',
+                scale=alt.Scale(range=['coral', 'rebeccapurple']),
+                legend=alt.Legend(legendY=225, legendX=415, orient='none')
+            ),
+            tooltip=['Type:N', alt.Tooltip('Percent Grade:Q', format='.3g')]
         )
 
         # Add instructions
@@ -631,7 +636,7 @@ class FscGrades(CanvasConnection):
         alt.vconcat(
             hist,
             # strip on top so that individual observations are always visible
-            mean_point + median_point + strip,
+            central_tendencies + strip,
             spacing=0
         ).properties(
             title=title
