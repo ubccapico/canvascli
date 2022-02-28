@@ -1,10 +1,12 @@
 from setuptools import setup, find_packages
-from canvascli import __version__
+
+import versioneer
 
 
 setup(
     name='canvascli',
-    version=__version__,
+    version=versioneer.get_version(),
+    cmdclass=versioneer.get_cmdclass(),
 
     description='A CLI to reformat and review Canvas grades',
     long_description=open('README.md').read(),
