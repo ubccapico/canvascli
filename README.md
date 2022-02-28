@@ -11,7 +11,7 @@ After installing those ([e.g. via miniconda](https://docs.conda.io/en/latest/min
 you can run this command from your terminal.
 
 ```shell
-pip install canvascli
+python -m pip install -U canvascli
 ```
 
 ## Usage
