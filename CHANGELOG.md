@@ -13,6 +13,8 @@ Note that major version zero (0.y.z) is for initial development and anything may
 - Visualize unposted student grades.
 - Improve warning message for students with an unposted grade
   that would change their final grade.
+- Allow filtering courses by date
+  and only show last year's courses by default.
 
 ### Changed
 - The grade drop threshold now applies to the unposted score.
@@ -21,6 +23,7 @@ Note that major version zero (0.y.z) is for initial development and anything may
 
 ### Fixed
 - Make end note easier to read.
+- Provide a default value instead of crashing when a course is missing a name.
 
 ## [0.3.3] - 2021-11-12
 

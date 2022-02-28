@@ -4,6 +4,7 @@ See the README and class docstrings for more info.
 import getpass
 import os
 from collections import defaultdict
+from datetime import datetime
 from decimal import Decimal, ROUND_HALF_UP
 from requests.exceptions import MissingSchema
 
@@ -124,7 +125,11 @@ def prepare_fsc_grades(course_id, filename, api_url, student_status,
 @click.option('--filter', 'filter_', default='', help='Only show courses including'
               ' this string (case insensitve). Useful to narrow down the displayed'
               ' results. Default: "" (matches all courses)')
-def show_courses(api_url, filter_):
+@click.option('--start-date', 'start_date_', default=None, help='Show courses'
+              ' starting at or after this date. Courses without a start date are'
+              ' always shown. Format "YYYY-MM-DD". Default: Show all courses'
+              ' starting within a year from today.')
+def show_courses(api_url, filter_, start_date_):
     """Show courses accessible by the given API token.
 
     Examples:
@@ -135,7 +140,7 @@ def show_courses(api_url, filter_):
         # Show only courses including the string "541"
         canvascli show-courses --filter 541
     """
-    accessible_courses = AccessibleCourses(api_url, filter_)
+    accessible_courses = AccessibleCourses(api_url, filter_, start_date_)
     accessible_courses.connect_to_canvas()
     accessible_courses.download_courses()
     accessible_courses.filter_and_show_courses()
@@ -181,15 +186,19 @@ class AccessibleCourses(CanvasConnection):
     """Show all courses accessible from a specific API token."""
     api_url: str
     filter_: str
+    start_date_: str
 
     def download_courses(self):
         """Download all courses accessible from a specific API token."""
         self.courses = defaultdict(list)
         try:
             for course in self.canvas.get_courses():
+
                 # Return a default value ('N/A') if the attribute is not found
                 self.courses['id'].append(getattr(course, 'id', 'N/A'))
                 self.courses['name'].append(getattr(course, 'name', 'N/A'))
+                self.courses['end_date'].append(getattr(course, 'end_at', 'N/A'))
+                self.courses['start_at'].append(getattr(course, 'start_at', 'N/A'))
         # Show common exceptions in a way that is easy to understand
         except MissingSchema:
             raise SystemExit(self.invalid_canvas_url_msg)
@@ -199,11 +208,32 @@ class AccessibleCourses(CanvasConnection):
 
     def filter_and_show_courses(self):
         """Filter and show downloaded courses."""
+        # The default is to include courses starting in the past year
+        start_date = pd.to_datetime(
+            self.start_date_ or datetime.now() - pd.DateOffset(months=12),
+            utc=True
+        ).date()
         click.echo("Your API token has access to the following courses:\n")
         click.echo(
-            pd.DataFrame(self.courses)
-            .query('name.str.contains(@self.filter_, case=False)', engine='python')
-            .to_markdown(index=False))
+            pd.DataFrame(
+                self.courses
+            ).assign(
+                start_at = lambda df: pd.to_datetime(df['start_at']).dt.date
+            ).query(
+                'start_at > @start_date'
+            ).query(
+                'name.str.contains(@self.filter_, case=False)',
+                engine='python'
+            ).sort_values(
+                'start_at'
+            ).drop(
+                columns=['end_date']
+            ).rename(
+                columns={'id': 'ID', 'name': 'Name', 'start_at': 'Start Date'}
+            ).to_markdown(
+                index=False
+            )
+        )
         return
 
 
