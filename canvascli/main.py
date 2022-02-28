@@ -345,8 +345,13 @@ class FscGrades(CanvasConnection):
 
         # Display the dropped students so the user can catch errors easily
         if dropped_students.shape[0] > 0:
-            click.echo(f'Dropping {dropped_students.shape[0]} student(s) with'
-                       f' missing information or a grade <= {self.drop_threshold}:\n')
+            click.secho('\nNOTE', fg='yellow', bold=True)
+            click.echo(
+                f'Dropping {dropped_students.shape[0]}'
+                f" {'students' if dropped_students.shape[0] > 1 else 'student'}"
+                f' with missing information, a grade <= {self.drop_threshold},'
+                '\nor that was explicitly dropped by student number:\n'
+            )
             click.echo(dropped_students.to_markdown(index=False))
             click.echo()
         return
@@ -572,10 +577,11 @@ class FscGrades(CanvasConnection):
         """Show disclaimer and note about manual grade entry of student standings."""
         click.secho('\nNOTE', fg='yellow', bold=True)
         click.echo(
-            '1. The saved CSV file should automatically be correctly formatted,'
+            '1. Make sure to check the output above for any warning and notes.'
+            '\n2. The saved CSV file should automatically be correctly formatted,'
             '\n   but it is ' + click.style('your responsibility', bold=True) + ' to double check in case there are unexpected changes'
             '\n   to how UBC inputs course info on Canvas.'
-            '\n2. If you have students that did not take the final exam'
+            '\n3. If you have students that did not take the final exam'
             '\n   or with a thesis in progress, you will need to enter this info manually.'
             '\n   Please see https://facultystaff.students.ubc.ca/files/FSCUserGuide.pdf'
             '\n   under "Acceptable Values for Grades Entry" for how to modify the CSV file.')

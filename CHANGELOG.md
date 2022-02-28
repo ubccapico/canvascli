@@ -11,10 +11,13 @@ Note that major version zero (0.y.z) is for initial development and anything may
 - Show mean and median grade in plot.
 - Add selection to show raw percentage in the plot.
 - Visualize unposted student grades.
+- Improve warning message for students with an unposted grade
+  that would change their final grade.
 
 ### Changed
 - The grade drop threshold now applies to the unposted score.
   rather than the posted score.
+- Make output notes and warnings stand out more.
 
 ### Fixed
 - Make end note easier to read.
