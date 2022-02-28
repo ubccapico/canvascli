@@ -187,8 +187,9 @@ class AccessibleCourses(CanvasConnection):
         self.courses = defaultdict(list)
         try:
             for course in self.canvas.get_courses():
-                self.courses['id'].append(course.id)
-                self.courses['name'].append(course.name)
+                # Return a default value ('N/A') if the attribute is not found
+                self.courses['id'].append(getattr(course, 'id', 'N/A'))
+                self.courses['name'].append(getattr(course, 'name', 'N/A'))
         # Show common exceptions in a way that is easy to understand
         except MissingSchema:
             raise SystemExit(self.invalid_canvas_url_msg)
