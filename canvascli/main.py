@@ -249,7 +249,6 @@ class FscGrades(CanvasConnection):
             type=['StudentEnrollment'], state=[self.student_status]
         )
         canvas_grades = defaultdict(list)
-        overridden_grades = []
         for enrollment in enrollments:
             canvas_grades['Student Number'].append(enrollment.user['sis_user_id'])
             surname, preferred_name = enrollment.user['sortable_name'].split(', ')
@@ -258,13 +257,13 @@ class FscGrades(CanvasConnection):
 
             # A warning message is later displayed for these students
             if 'override_score' in enrollment.grades:
-                overridden_grades.append(
-                    f"{preferred_name:<12} {surname:<12}"
-                    f" {enrollment.grades['final_score']:<4} ->"
-                    f" {enrollment.grades['override_score']}")
                 canvas_grades['Percent Grade'].append(enrollment.grades['override_score'])
+                canvas_grades['override_final_score'].append(enrollment.grades['final_score'])
             else:
                 canvas_grades['Percent Grade'].append(enrollment.grades['final_score'])
+                canvas_grades['override_final_score'].append(0)
+
+            # A warning message is later displayed for these students
             if 'unposted_final_score' in enrollment.grades:
                 canvas_grades['Unposted Percent Grade'].append(enrollment.grades['unposted_final_score'])
                 if enrollment.grades['unposted_final_score'] != enrollment.grades['final_score']:
@@ -273,11 +272,29 @@ class FscGrades(CanvasConnection):
                     canvas_grades['different_unposted_score'].append(False)
 
         self.canvas_grades = pd.DataFrame(canvas_grades)
-        if len(overridden_grades) > 0:
-            click.echo('Students with manual Canvas override of their final grade:')
-            [click.echo(grade) for grade in overridden_grades]
-            click.echo()
         different_unposted_score = self.canvas_grades.pop('different_unposted_score')
+        override_final_score = self.canvas_grades.pop('override_final_score')
+
+        # Display a note that some student grade are manually overridden
+        if override_final_score.sum() > 0:
+            click.secho('\nNOTE', fg='yellow', bold=True)
+            click.echo(
+                'You have used the "Overide" column on Canvas'
+                '\nto change the final score for the following students:\n'
+            )
+            click.echo(
+                self.canvas_grades
+                    .query(
+                        '@override_final_score > 0'
+                    ).assign(
+                        **{'Percent Grade Before Override': override_final_score}
+                    ).drop(
+                        columns='Unposted Percent Grade'
+                    ).to_markdown(
+                        index=False
+                    )
+                )
+            click.echo()
 
         # Warn about students with unposted grades that change their final scores
         if different_unposted_score.sum() > 0:
@@ -297,6 +314,7 @@ class FscGrades(CanvasConnection):
                         index=False
                     )
                 )
+            click.echo()
         return
 
     def drop_student_entries(self):
@@ -552,10 +570,10 @@ class FscGrades(CanvasConnection):
 
     def show_manual_grade_entry_note(self):
         """Show disclaimer and note about manual grade entry of student standings."""
+        click.secho('\nNOTE', fg='yellow', bold=True)
         click.echo(
-            '\nNote:'
-            '\n1. The saved CSV file should automatically be correctly formatted,'
-            '\n   but it is your responsibility to double check in case there are unexpected changes'
+            '1. The saved CSV file should automatically be correctly formatted,'
+            '\n   but it is ' + click.style('your responsibility', bold=True) + ' to double check in case there are unexpected changes'
             '\n   to how UBC inputs course info on Canvas.'
             '\n2. If you have students that did not take the final exam'
             '\n   or with a thesis in progress, you will need to enter this info manually.'
