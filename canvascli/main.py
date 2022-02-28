@@ -2,17 +2,22 @@
 See the README and class docstrings for more info.
 """
 import getpass
+import json
 import os
 from collections import defaultdict
 from datetime import datetime
 from decimal import Decimal, ROUND_HALF_UP
+from importlib.metadata import version
 from requests.exceptions import MissingSchema
+from urllib.error import URLError
 
 import altair as alt
 import click
 import pandas as pd
+from appdirs import user_data_dir
 from canvasapi import Canvas
 from canvasapi.exceptions import InvalidAccessToken, Unauthorized
+from luddite import get_version_pypi
 # Using https://github.com/biqqles/dataclassy instead of dataclasses from
 # stdlibto allow for dataclass inheritance when there are default values. Could
 # use a custom init but it gets messy and the advantage of using dataclasses is
@@ -40,6 +45,58 @@ def cli():
     If you don't want to be prompted for your Canvas API token,
     you can save it to an environmental variable named CANVAS_PAT.
     """
+    # Since canvascli might be useful for people who don't use Python
+    # frequently, I have chosen to always print the program version and to
+    # occasionally check for newer versions of canvascli online and to note if
+    # one is found.
+    canvascli_version = version('canvascli')
+    click.echo(f'canvascli version {canvascli_version}')
+
+    if 'canvascli_prevent_update' in os.environ:
+        pass
+    else:
+        data_dir = user_data_dir('canvascli')
+        data_file = os.path.join(data_dir, 'data.json')
+        try:
+            # If the config file exists
+            with open(data_file) as f:
+                stored_data = json.load(f)
+        except (FileNotFoundError, OSError, PermissionError):
+            # Generate a default config when no file is found
+            stored_data['last_update_check'] = '2001-01-01'
+
+        last_update_check = datetime.strptime(
+            stored_data['last_update_check'],
+            '%Y-%m-%d'
+        )
+        # Run a check online and update the config file if the last check was a long time ago
+        if (datetime.now() - last_update_check) > pd.Timedelta(weeks=4):
+            try:
+                latest_version = get_version_pypi("canvascli")
+                # Update `last_update_check` in the config if the update check is succesful
+                if canvascli_version == latest_version:
+                    os.makedirs(data_dir, exist_ok=True)
+                    with open(data_file, 'w', encoding='utf-8') as f:
+                        json.dump(
+                            {'last_update_check': datetime.now().strftime('%Y-%m-%d')},
+                            f,
+                            ensure_ascii=False,
+                            indent=4
+                        )
+                    # If no update was found, don't check again untill the env variables are cleared
+                    # This avoids reading the settings file unnecessarily
+                    # since the result will likely be the same in the same session anyways.
+                    os.environ['canvascli_prevent_update'] = 'True'
+                else:
+                    click.secho('\nNOTE', fg='yellow', bold=True)
+                    click.echo(
+                        f'A new version ({latest_version}) is available'
+                        '\nRead the release notes at https://github.com/joelostblom/canvascli/releases'
+                        '\nand download it via `python -m pip install -U canvascli`.'
+                    )
+            except URLError:
+                # If there is no connectivity
+                pass
     return
 
 

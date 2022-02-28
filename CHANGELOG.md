@@ -15,6 +15,7 @@ Note that major version zero (0.y.z) is for initial development and anything may
   that would change their final grade.
 - Allow filtering courses by date
   and only show last year's courses by default.
+- Print version number and check for the latest version online.
 
 ### Changed
 - The grade drop threshold now applies to the unposted score.

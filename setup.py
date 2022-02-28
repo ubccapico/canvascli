@@ -26,7 +26,9 @@ setup(
         'click>=8.0.0',
         'pandas>=1.1.0',
         'tabulate>=0.8.3',
-        'dataclassy>=0.10'
+        'dataclassy>=0.10',
+        'luddite>=1.0',
+        'appdirs>=1.0'
     ],
     entry_points={
         'console_scripts': [
