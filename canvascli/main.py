@@ -27,6 +27,9 @@ from dataclassy import dataclass
 from . import __version__
 
 
+# Using this as a first try, might have to use an external file instead
+alt.data_transformers.disable_max_rows()
+
 @click.group()
 @click.version_option(version=__version__, prog_name='canvascli')
 def cli():
