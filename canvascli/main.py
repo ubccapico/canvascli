@@ -246,7 +246,8 @@ class FscGrades(CanvasConnection):
         """Download grades from a canvas course."""
         click.echo('Downloading student grades...')
         enrollments = self.course.get_enrollments(
-            type=['StudentEnrollment'], state=[self.student_status])
+            type=['StudentEnrollment'], state=[self.student_status]
+        )
         canvas_grades = defaultdict(list)
         overridden_grades = []
         for enrollment in enrollments:
@@ -254,6 +255,8 @@ class FscGrades(CanvasConnection):
             surname, preferred_name = enrollment.user['sortable_name'].split(', ')
             canvas_grades['Surname'].append(surname)
             canvas_grades['Preferred Name'].append(preferred_name)
+
+            # A warning message is later displayed for these students
             if 'override_score' in enrollment.grades:
                 overridden_grades.append(
                     f"{preferred_name:<12} {surname:<12}"
@@ -265,14 +268,35 @@ class FscGrades(CanvasConnection):
             if 'unposted_final_score' in enrollment.grades:
                 canvas_grades['Unposted Percent Grade'].append(enrollment.grades['unposted_final_score'])
                 if enrollment.grades['unposted_final_score'] != enrollment.grades['final_score']:
-                    click.echo(
-                        'There are unposted assignments that would change the final score of '
-                        + f'{preferred_name} {surname}. Please post all assignments on Canvas.')
+                    canvas_grades['different_unposted_score'].append(True)
+                else:
+                    canvas_grades['different_unposted_score'].append(False)
+
         self.canvas_grades = pd.DataFrame(canvas_grades)
         if len(overridden_grades) > 0:
             click.echo('Students with manual Canvas override of their final grade:')
             [click.echo(grade) for grade in overridden_grades]
             click.echo()
+        different_unposted_score = self.canvas_grades.pop('different_unposted_score')
+
+        # Warn about students with unposted grades that change their final scores
+        if different_unposted_score.sum() > 0:
+            click.secho('\nWARNING', fg='red', bold=True)
+            click.echo(
+                'Remember to post all assignments on Canvas'
+                '\nbefore creating the CSV-file to upload to the FSC.'
+                '\nThere are currently unposted Canvas assignments'
+                '\nthat would change the final score of the following students:\n'
+            )
+            click.echo(
+                self.canvas_grades
+                    .query(
+                        '@different_unposted_score == True'
+                    )
+                    .to_markdown(
+                        index=False
+                    )
+                )
         return
 
     def drop_student_entries(self):
