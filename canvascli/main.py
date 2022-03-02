@@ -53,7 +53,7 @@ def cli():
     # occasionally check for newer versions of canvascli online and to note if
     # one is found.
     canvascli_version = version('canvascli')
-    click.echo(f'canvascli version {canvascli_version}')
+    click.echo(f'\ncanvascli version {canvascli_version}')
 
     if 'canvascli_prevent_update' in os.environ:
         pass
