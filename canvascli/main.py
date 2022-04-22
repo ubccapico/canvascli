@@ -66,6 +66,7 @@ def cli():
                 stored_data = json.load(f)
         except (FileNotFoundError, OSError, PermissionError):
             # Generate a default config when no file is found
+            stored_data = {}
             stored_data['last_update_check'] = '2001-01-01'
 
         last_update_check = datetime.strptime(
