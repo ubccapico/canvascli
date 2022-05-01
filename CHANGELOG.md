@@ -5,6 +5,18 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 Version number is based on [Semver](https://semver.org/).
 Note that major version zero (0.y.z) is for initial development and anything may change at any time.
 
+## [Unreleased]
+
+### Added
+- Visualize individual student assignment scores.
+    - This makes it possible to see how a student is doing over time
+    and if intervention is needed.
+- Link Final Grade Plot with individual student assignment scores.
+- Visualize score distributions for each assignment along with mean and median.
+- Visualize a comparison between scores from each grader.
+- Center chart titles and add more elaborate instructions.
+- Show mean and median grade in plot
+
 ## [0.4.0] - 2022-04-30
 
 ### Added
