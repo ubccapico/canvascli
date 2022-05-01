@@ -426,15 +426,23 @@ class FscGrades(CanvasConnection):
         # and they need to be explicit in disabling the behavior instead of
         # accidentally uploading empty fields to FSC.
         if self.drop_na:
-            dropped_students = dropped_students.append(
-                self.canvas_grades[self.canvas_grades.isna().any(axis=1)])
+            dropped_students = pd.concat([
+                dropped_students,
+                self.canvas_grades[self.canvas_grades.isna().any(axis=1)]
+                ],
+                ignore_index=True
+            )
             self.canvas_grades = self.canvas_grades.dropna()
 
         # Drop students explicitly
         if self.drop_students is not None:
-            dropped_students = dropped_students.append(
+            dropped_students = pd.concat([
+                dropped_students,
                 self.canvas_grades.query(
-                    '`Student Number` in @self.drop_students.split()'))
+                    '`Student Number` in @self.drop_students.split()')
+                ],
+                ignore_index=True
+            )
             self.canvas_grades = self.canvas_grades.query(
                 '`Student Number` not in @self.drop_students.split()').copy()
 
