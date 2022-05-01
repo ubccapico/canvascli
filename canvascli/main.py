@@ -536,7 +536,8 @@ class FscGrades(CanvasConnection):
                 assignment_scores[f'Assignment'].append(assignment.name)
             assignment_scores_dfs.append(pd.DataFrame(assignment_scores))
         assignment_score_df = pd.concat(assignment_scores_dfs)
-        # Sometime a negative number is returned for the grader, which does not make sense, maybe from gradescope?
+        # Sometime a negative number is returned for the grader,
+        # which does not make sense, maybe from gradescope?
         assignment_score_df.loc[assignment_score_df['Grader ID'] < 0, 'Grader ID']  = pd.NA
 
         user_ids_and_names = {
@@ -552,10 +553,13 @@ class FscGrades(CanvasConnection):
             user_ids_and_names_df['Student Number']
         )
 
-        assignment_score_df['Score'] = assignment_score_df['Score'].apply(
-            lambda x: Decimal(x).quantize(Decimal('0.01'), rounding=ROUND_HALF_UP)
-        ).astype(float)
-        # self.canvas has had dropped students removed at this point so we can use it to drop from the assignment score as well
+        # Using `round` instead of `Decimal` here
+        # since the latter can't deal with a df with a single `None`
+        # and because this is just to show on the assignment scores,
+        # so it does not have to be fairly rounded like the final FSC grades.
+        assignment_score_df['Score'] = assignment_score_df['Score'].round(2)
+        # self.canvas has had dropped students removed at this point
+        # so we can use it to drop from the assignment score as well
         assignment_score_df = assignment_score_df.query(
             '`User ID` in @self.canvas_grades["User ID"]'
         ).copy()
