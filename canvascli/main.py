@@ -458,11 +458,11 @@ class FscGrades(CanvasConnection):
         # canvas course code (for UBC courses in general), but there is an override
         # option just in case
         self.campus = 'UBC'
-        self.subject, self.course, self.section, self.session = self.course.course_code.split()
+        self.subject, self.course_name, self.section, self.session = self.course.course_code.split()
         if self.override_campus is not None:
             self.campus = self.override_campus
         if self.override_course is not None:
-            self.course = self.override_course
+            self.course_name = self.override_course
         if self.override_section is not None:
             self.section = self.override_section
         if self.override_session is not None:
@@ -477,7 +477,7 @@ class FscGrades(CanvasConnection):
         # Remove the session number which is only present on Canvas but not FSC
         self.session = self.session[:-1]
         self.fsc_grades[additional_fsc_fields] = (
-            self.campus, self.course, self.section, self.session, self.subject, '', '')
+            self.campus, self.course_name, self.section, self.session, self.subject, '', '')
 
         # Round to whole percentage format since FSC requires that
         # Using Decimal to always round up .5 instead of rounding to even,
@@ -795,11 +795,14 @@ class FscGrades(CanvasConnection):
 
         # Add instructions
         title = alt.TitleParams(
-            text=f'Grade distribution {self.subject} {self.course}',
+            text=f'Final Grade Distribution {self.subject} {self.course_name}',
             subtitle=[
-                'Hover over the points to see the student name and grade.',
+                'Hover near a point to view student info and highlight a line.',
                 'Zoom with the mouse wheel and double click to reset the view.',
-                'Click the three dots button to the right to save the plot.']
+                'Changes in the dropdown menus below only affect this chart'
+            ],
+            anchor='middle',
+            dx=25
         )
 
         # Concatenate, add filters, and save the chart
