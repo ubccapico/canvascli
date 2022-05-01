@@ -19,41 +19,17 @@ python -m pip install -U canvascli
 All `canvascli` functionality requires that you have [created an Canvas API access
 token](https://community.canvaslms.com/t5/Instructor-Guide/How-do-I-manage-API-access-tokens-as-an-instructor/ta-p/1177),
 so do that first if you don't have one already.
-When running `canvascli`,
+
+> When running `canvascli`,
 you can either enter your Canvas token when prompted at the command line
 (ideally using a password manager, e.g. [KeePassXC](https://keepassxc.org/)),
-or store it in an environment variable named `CANVAS_PAT`.
+or store it in an environment variable named `CANVAS_PAT`
+(if you are using GitBash's default terminal on Windows,
+you will not be able to paste into the terminal prompt
+and defining the environmental variable is required).
+
 Typing `canvascli` at the command prompt will show the general help message
 including the available sub-commands.
-
-<!--
-```text
-Usage: canvascli [OPTIONS] COMMAND [ARGS]...
-
-  A CLI to reformat and review Canvas grades.
-
-  Examples:
-      # Download grades from canvas and convert them to FSC format
-      canvascli prepare-fsc-grades --course-id 53665
-
-      # Show courses accessible by the given API token
-      canvascli show-courses
-
-  See the --help for each subcommand for more options.
-
-  If you don't want to be prompted for your Canvas API token, you can save it
-  to an environmental variable named CANVAS_PAT.
-
-Options:
-  --version  Show the version and exit.
-  --help     Show this message and exit.
-
-Commands:
-  prepare-fsc-grades       Prepare course grades for FSC submission.
-  show-courses             Show courses accessible by the given API token.
-```
--->
-
 The most common use case
 is probably to prepare final grades for FSC submission,
 which you can do like so:
@@ -84,12 +60,6 @@ This will output a table with all the courses
 your API token has access to.
 Run `canvascli show-courses --help`
 to view all available options.
-
-> If you don't want to be prompted for your Canvas API token each time,
-you can save it to an environmental variable named CANVAS_PAT
-(if you are using GitBash's default terminal on Windows,
-you will not be able to paste into the `canvascli` prompt
-and defining the environmental variable is required).
 
 ## Shell completion
 
