@@ -577,8 +577,6 @@ class FscGrades(CanvasConnection):
                 title='',
                 scale=alt.Scale(range=['coral', 'rebeccapurple']),
                 legend=None
-                # legend=alt.Legend(legendY=300, legendX=295, orient='none', columns=2)
-                # legend=alt.Legend(legendY=225, legendX=415, orient='none')
             ),
             tooltip=['Type:N', alt.Tooltip('Percent Grade:Q', format='.3g')]
         )
@@ -788,7 +786,7 @@ class FscGrades(CanvasConnection):
                 'Type:N',
                 title='',
                 scale=alt.Scale(range=['coral', 'rebeccapurple']),
-                legend=alt.Legend(legendY=225, legendX=415, orient='none')
+                legend=alt.Legend(legendY=300, legendX=295, orient='none', columns=2)
             ),
             tooltip=['Type:N', alt.Tooltip('Percent Grade:Q', format='.3g')]
         )
