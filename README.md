@@ -1,8 +1,9 @@
 # canvascli
 
-`canvascli` downloads grades from Canvas
-and converts them into the format required
-for final submission to the FSC at UBC.
+`canvascli` downloads grades from Canvas,
+converts them into the format required
+for final submission to the FSC at UBC,
+and creates a few helpful visualizations.
 
 ## Installation
 
@@ -45,7 +46,8 @@ but it is a good idea to double check
 in case there are unexpected changes
 to how UBC inputs course info on Canvas.
 `canvascli` drops students without a grade by default,
-and creates a simple visualization of the grade distribution.
+and creates a few helpful visualizations of the final grades
+and assignment scores.
 Run `canvascli prepare-fsc-grades --help`
 to view all available options.
 
