@@ -727,8 +727,8 @@ class FscGrades(CanvasConnection):
 
         # Plot distribution
         hist = alt.Chart(self.fsc_grades_for_viz, height=200).mark_bar().encode(
-            alt.X('Percent Grade', bin=alt.Bin(maxbins=15), title='', axis=alt.Axis(labels=False)),
-            alt.Y('count()', title='Number of students')
+            alt.X('Percent Grade', bin=alt.Bin(step=5), title='', axis=alt.Axis(labels=False)),
+            alt.Y('count()', title='Student Count')
         )
 
         # Plot all observations
@@ -740,7 +740,7 @@ class FscGrades(CanvasConnection):
             Name='datum["Preferred Name"] + " " + datum["Surname"]'
         ).encode(
             alt.X('Percent Grade',
-                title='Percent Grade',
+                title='Final Percent Grade',
                 scale=alt.Scale(
                     zero=False,
                     nice=False,
