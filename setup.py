@@ -21,14 +21,15 @@ setup(
     packages=find_packages(),
     include_package_data=True,
     install_requires=[
-        'altair>=4.1.0',
+        'altair>=4.2.0',
         'canvasapi>=2.1.0',
         'click>=8.0.0',
         'pandas>=1.1.0',
         'tabulate>=0.8.3',
         'dataclassy>=0.10',
         'luddite>=1.0',
-        'appdirs>=1.0'
+        'appdirs>=1.0',
+        'tqdm>=4.40'
     ],
     entry_points={
         'console_scripts': [
