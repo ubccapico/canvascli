@@ -16,7 +16,7 @@ setup(
     author_email='joelostblom@protonmail.com',
     url='https://github.com/joelostblom/canvascli',
 
-    python_requires='>=3.6',
+    python_requires='>=3.8',
     py_modules=['canvascli'],
     packages=find_packages(),
     include_package_data=True,
