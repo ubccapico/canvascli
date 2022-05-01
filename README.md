@@ -18,7 +18,11 @@ python -m pip install -U canvascli
 
 All `canvascli` functionality requires that you have [created an Canvas API access
 token](https://community.canvaslms.com/t5/Instructor-Guide/How-do-I-manage-API-access-tokens-as-an-instructor/ta-p/1177),
-so do that first if you don't have one already. Once you have your Canvas API toke, store it in an environment variable named `CANVAS_PAT`.
+so do that first if you don't have one already.
+When running `canvascli`,
+you can either enter your Canvas token when prompted at the command line
+(ideally using a password manager, e.g. [KeePassXC](https://keepassxc.org/)),
+or store it in an environment variable named `CANVAS_PAT`.
 Typing `canvascli` at the command prompt will show the general help message
 including the available sub-commands.
 
