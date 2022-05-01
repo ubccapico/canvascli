@@ -830,6 +830,10 @@ class FscGrades(CanvasConnection):
                 '\n<style>'
                 '\n    form.vega-bindings {'
                 '\n        font-family: sans-serif;'
+                '\n        font-size: 12px;'
+                '\n        position: absolute;'
+                '\n        left: 60px;'
+                '\n        top: 395px;'
                 '\n    }'
                 '\n</style>'
             )
