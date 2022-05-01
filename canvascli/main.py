@@ -344,6 +344,7 @@ class FscGrades(CanvasConnection):
         )
         canvas_grades = defaultdict(list)
         for enrollment in enrollments:
+            canvas_grades['User ID'].append(enrollment.user['id'])
             canvas_grades['Student Number'].append(enrollment.user['sis_user_id'])
             surname, preferred_name = enrollment.user['sortable_name'].split(', ')
             canvas_grades['Surname'].append(surname)
@@ -422,7 +423,7 @@ class FscGrades(CanvasConnection):
 
         # Drop students that have missing info in any field
         # These are also printed so that it is clear to the user what has happened
-        # and they need to be explicit in disabling the beahvior instead of
+        # and they need to be explicit in disabling the behavior instead of
         # accidentally uploading empty fields to FSC.
         if self.drop_na:
             dropped_students = dropped_students.append(
@@ -678,7 +679,7 @@ class FscGrades(CanvasConnection):
                 }
             # Combine the rounded and raw *unposted* scores 
             ).melt(
-                id_vars=['Preferred Name', 'Surname', 'Student Number'],
+                id_vars=['Preferred Name', 'Surname', 'Student Number', 'User ID'],
                 value_vars=['FSC Rounded', 'Exact'],
                 value_name='Unposted Grade',
                 var_name='Percent Type'
@@ -691,14 +692,14 @@ class FscGrades(CanvasConnection):
                 }
             # Combine the rounded and raw *posted* scores 
             ).melt(
-                id_vars=['Preferred Name', 'Surname', 'Student Number'],
+                id_vars=['Preferred Name', 'Surname', 'Student Number', 'User ID'],
                 value_vars=['FSC Rounded', 'Exact'],
                 value_name='Posted Grade',
                 var_name='Percent Type'
             )
         # Combine the posted and unposted scores
         ).melt(
-            id_vars=['Preferred Name', 'Surname', 'Student Number', 'Percent Type'],
+            id_vars=['Preferred Name', 'Surname', 'Student Number', 'User ID', 'Percent Type'],
             value_vars=['Unposted Grade', 'Posted Grade'],
             value_name='Percent Grade',
             var_name='Grade Status'
@@ -756,8 +757,15 @@ class FscGrades(CanvasConnection):
                     grid=False
                 )
             ),
-            alt.Tooltip(['Name:N', 'Student Number', 'Percent Grade'])
-        ).interactive()
+            alt.Tooltip(['Name:N', 'Student Number', 'Percent Grade']),
+            color=alt.condition(self.hover, alt.value('maroon'), alt.value('steelblue'))
+        )
+
+        strip_overlay = strip.mark_circle(size=80).encode(
+            color=alt.value('maroon')
+        ).transform_filter(
+            self.hover
+        )
 
         # Plot central tendencies
         central_tendencies = alt.Chart(
@@ -799,7 +807,7 @@ class FscGrades(CanvasConnection):
         alt.vconcat((alt.vconcat(
             hist,
             # strip on top so that individual observations are always visible
-            central_tendencies + strip,
+            strip.add_selection(self.hover).interactive() + strip_overlay + central_tendencies,
             spacing=0
         ).properties(
             title=title
