@@ -18,6 +18,7 @@ from appdirs import user_data_dir
 from canvasapi import Canvas
 from canvasapi.exceptions import InvalidAccessToken, Unauthorized
 from luddite import get_version_pypi
+from tqdm import tqdm
 # Using https://github.com/biqqles/dataclassy instead of dataclasses from
 # stdlibto allow for dataclass inheritance when there are default values. Could
 # use a custom init but it gets messy and the advantage of using dataclasses is
@@ -175,6 +176,7 @@ def prepare_fsc_grades(course_id, filename, api_url, student_status,
         click.echo('Did not find any assigned grades, exiting.')
     else:
         fsc_grades.save_fsc_grades_to_file()
+        fsc_grades.plot_assignment_scores()
         fsc_grades.plot_fsc_grade_distribution()
         fsc_grades.show_manual_grade_entry_note()
     return
@@ -506,6 +508,163 @@ class FscGrades(CanvasConnection):
         click.echo(f'Grades saved to {self.filename}.csv.')
         return
 
+    def plot_assignment_scores(self):
+        assignments = [a for a in self.course.get_assignments() if a.points_possible > 0]
+        assignment_scores_dfs = []
+        click.echo("Downloading assignment scores...")
+        assignment_progress_bar = tqdm(assignments)
+        for assignment in assignment_progress_bar:
+            assignment_progress_bar.set_description(assignment.name)
+            submissions = assignment.get_submissions()
+            assignment_scores = defaultdict(list)
+            for submission in submissions:
+                assignment_scores['User ID'].append(submission.user_id)
+                assignment_scores[f'Grader ID'].append(submission.grader_id)
+                assignment_scores[f'Score'].append(
+                    100 * submission.score / assignment.points_possible
+                    if submission.score is not None else None
+                )
+                assignment_scores[f'Assignment'].append(assignment.name)
+            assignment_scores_dfs.append(pd.DataFrame(assignment_scores))
+        assignment_score_df = pd.concat(assignment_scores_dfs)
+        # Sometime a negative number is returned for the grader, which does not make sense, maybe from gradescope?
+        assignment_score_df.loc[assignment_score_df['Grader ID'] < 0, 'Grader ID']  = pd.NA
+
+        user_ids_and_names = {
+            user.id: [user.name, user.sis_user_id]
+            for user in self.course.get_users()
+        }
+        user_ids_and_names_df = pd.DataFrame.from_dict(
+            user_ids_and_names, orient='index', columns=['Name', 'Student Number']
+        )
+        assignment_score_df['Grader'] = assignment_score_df['Grader ID'].map(user_ids_and_names_df['Name'])
+        assignment_score_df['Student'] = assignment_score_df['User ID'].map(user_ids_and_names_df['Name'])
+        assignment_score_df['Student Number'] = assignment_score_df['User ID'].map(
+            user_ids_and_names_df['Student Number']
+        )
+
+        assignment_score_df['Score'] = assignment_score_df['Score'].apply(
+            lambda x: Decimal(x).quantize(Decimal('0.01'), rounding=ROUND_HALF_UP)
+        ).astype(float)
+        # self.canvas has had dropped students removed at this point so we can use it to drop from the assignment score as well
+        assignment_score_df = assignment_score_df.query(
+            '`User ID` in @self.canvas_grades["User ID"]'
+        ).copy()
+
+        grader_order = assignment_score_df.groupby(
+            'Grader'
+        )['Score'].mean().sort_values().index.tolist()
+
+        assignment_central_tendencies = alt.Chart(
+                assignment_score_df
+            ).transform_aggregate(
+                Mean='mean(Score)',
+                Median='median(Score)',
+            ).transform_fold(
+                fold=['Mean', 'Median'],
+                as_=['Type', 'Percent Grade']
+            ).transform_calculate(
+                y='-3.05',
+            ).mark_point(
+            size=65,
+            shape='diamond'
+        ).encode(
+            x='Percent Grade:Q',
+            y='y:Q',
+            color=alt.Color(
+                'Type:N',
+                title='',
+                scale=alt.Scale(range=['coral', 'rebeccapurple']),
+                legend=None
+                # legend=alt.Legend(legendY=300, legendX=295, orient='none', columns=2)
+                # legend=alt.Legend(legendY=225, legendX=415, orient='none')
+            ),
+            tooltip=['Type:N', alt.Tooltip('Percent Grade:Q', format='.3g')]
+        )
+
+        # Min height=80 for histograms to look nice
+        # 20 is the default step size for categorical scale
+        height = max(80, len(grader_order) * 20)
+        self.assignment_distributions = alt.hconcat((alt.Chart(
+            assignment_score_df,
+            height=height,
+        ).mark_bar().encode(
+            x=alt.X('Score', bin=alt.Bin(step=5)),
+            y=alt.Y('count()', title='Student Count'),
+        ) + assignment_central_tendencies
+        ).facet(
+            title=alt.TitleParams(
+                'Assignment Score Distributions',
+                subtitle='Hover over the points to see the exact mean and median score.',
+                anchor='middle',
+                dx=25
+            ),
+            row=alt.Row('Assignment', title='', header=alt.Header(labelFontSize=13))
+        ), alt.Chart(
+            assignment_score_df.reset_index(),
+            height=height + 2,
+            title=alt.TitleParams(
+                'Comparison Between Graders',
+                subtitle='Hover over the box for detailed grader info.',
+                anchor='middle',
+                dx=-40
+            ),
+        ).mark_boxplot(median={'color': 'black'}).encode(
+            x=alt.X('Score', scale=alt.Scale(zero=False)),
+            y=alt.Y('Grader:N', sort=grader_order, title='', axis=alt.Axis(orient='right')),
+            row=alt.Row('Assignment', title='', header=alt.Header(labels=False)),
+            color=alt.Color('Grader:N', sort=grader_order, legend=None)
+        ).resolve_scale(
+            y='independent',
+            color='independent'
+        ),
+        spacing=60
+        )
+
+        # Plot assignment scores
+        assignment_score_df['Assignment scores stdev'] = assignment_score_df['User ID'].map(
+            assignment_score_df.groupby('User ID')['Score'].std()
+        )
+        self.hover = alt.selection_single(
+            fields=['User ID'], on='mouseover', nearest=True, empty='none'
+        )
+        base = alt.Chart(
+                assignment_score_df,
+                title=alt.TitleParams(
+                    'Student Assignment Scores',
+                    subtitle=[
+                        'Hover near a point to highlight a line and view student info.',
+                        'Click the three dots button to the right to save this entire page.',
+                    ],
+                    anchor='middle',
+                    dx=25
+                ),
+            ).mark_point(opacity=0).encode(
+            y=alt.Y('Score', scale=alt.Scale(zero=False), title='Assignment Score (%)'),
+            detail='User ID',
+            x=alt.X('Assignment', title='')
+        )
+        width = min(1000, max(400, 80 * assignment_score_df['Assignment'].nunique()))
+        self.assignment_scores = (
+            base.add_selection(
+                self.hover
+            ) + base.mark_line(opacity=0.5, interpolate='monotone').encode(
+                color=alt.Color(
+                    'Assignment scores stdev',
+                    scale=alt.Scale(scheme='cividis', reverse=True),
+                    title=['Stdev between', 'Assignments']
+                )
+            ) + base.mark_line(size=3, point=True, interpolate='monotone').encode(
+                color=alt.value('maroon'),  # required to color points on line
+                tooltip=['Student', 'Student Number', 'Score'],
+            ).transform_filter(
+                self.hover
+            )).properties(
+                width=width,
+                height=280,
+            ).interactive()
+        return
+
     def plot_fsc_grade_distribution(self):
         # Prepare dataframe for filtering via Altair selection elements
         # First the rounded and raw scores are melted together separately for posted and unposted scores
@@ -637,7 +796,7 @@ class FscGrades(CanvasConnection):
 
         # Concatenate, add filters, and save the chart
         chart_filename = self.filename + '.html'
-        alt.vconcat(
+        alt.vconcat((alt.vconcat(
             hist,
             # strip on top so that individual observations are always visible
             central_tendencies + strip,
@@ -646,12 +805,13 @@ class FscGrades(CanvasConnection):
             title=title
         ).resolve_scale(
             x='shared'
-        ).configure_view(
-            strokeWidth=0
         ).transform_filter(
                 percent_type_selection & grade_status_selection
         ).add_selection(
             percent_type_selection, grade_status_selection
+        ) | self.assignment_scores), self.assignment_distributions, spacing=60
+        ).resolve_scale(
+            color='independent'
         ).save(
             chart_filename
         )
