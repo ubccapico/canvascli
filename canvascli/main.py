@@ -713,7 +713,7 @@ class FscGrades(CanvasConnection):
         grade_status_selection = alt.selection_single(
             fields=['Grade Status'],
             bind=grade_status_dropdown,
-            init={'Grade Status': 'Posted Grade'}
+            init={'Grade Status': 'Unposted Grade'}
         )
         percent_type_dropdown = alt.binding_select(
             options=['FSC Rounded', 'Exact'],
@@ -722,7 +722,7 @@ class FscGrades(CanvasConnection):
         percent_type_selection = alt.selection_single(
             fields=['Percent Type'],
             bind=percent_type_dropdown,
-            init={'Percent Type': 'FSC Rounded'}
+            init={'Percent Type': 'Exact'}
         )
 
         # Plot distribution
