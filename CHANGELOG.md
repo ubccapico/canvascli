@@ -11,11 +11,12 @@ Note that major version zero (0.y.z) is for initial development and anything may
 - Visualize individual student assignment scores.
     - This makes it possible to see how a student is doing over time
     and if intervention is needed.
+- Optionally filter how many assignments show up in the visualization.
 - Link Final Grade Plot with individual student assignment scores.
 - Visualize score distributions for each assignment along with mean and median.
 - Visualize a comparison between scores from each grader.
 - Center chart titles and add more elaborate instructions.
-- Show mean and median grade in plot
+- Show mean and median grade in plot.
 
 ### Changed
 - Require Python 3.8 instead of 3.6 to ensure that importlib.metadata is in stdlib.

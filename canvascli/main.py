@@ -4,6 +4,7 @@ See the README and class docstrings for more info.
 import getpass
 import json
 import os
+import re
 from collections import defaultdict
 from datetime import datetime
 from decimal import Decimal, ROUND_HALF_UP
@@ -130,6 +131,10 @@ def cli():
 @click.option('--open-chart', default=None, type=bool, help='Whether to open'
               ' the grade distribution chart automatically.'
               ' Default: Ask at the end')
+@click.option('--filter-assignments', default='.*', type=str, help='Regex to filter'
+              ' which assignments are included in the visualization (case-sensitive).'
+              ' Does not affect the final grade calculation.'
+              ' Default: All (.*)')
 @click.option('--override-campus', default=None, help='Override the automatically'
               ' detected course campus in the CSV file with this text. Default: None')
 @click.option('--override-course', default=None, help='Override the automatically'
@@ -141,8 +146,8 @@ def cli():
 @click.option('--override-subject', default=None, help='Override the automatically'
               ' detected course subject in the CSV file with this text. Default: None')
 def prepare_fsc_grades(course_id, filename, api_url, student_status,
-                       drop_students, drop_threshold, drop_na,
-                       open_chart, override_campus, override_course,
+                       drop_students, drop_threshold, drop_na, open_chart,
+                       filter_assignments, override_campus, override_course,
                        override_section, override_session, override_subject):
     """Prepare course grades for FSC submission.
     \b
@@ -166,7 +171,7 @@ def prepare_fsc_grades(course_id, filename, api_url, student_status,
     """
     fsc_grades = FscGrades(
         course_id, filename, api_url, student_status, drop_students,
-        drop_threshold, drop_na, open_chart, override_campus,
+        drop_threshold, drop_na, open_chart, filter_assignments, override_campus,
         override_course, override_section, override_session, override_subject)
     fsc_grades.connect_to_canvas()
     fsc_grades.connect_to_course()
@@ -312,6 +317,7 @@ class FscGrades(CanvasConnection):
     drop_threshold: int
     drop_na: bool
     open_chart: bool
+    filter_assignments: str
     override_campus: str
     override_course: str
     override_section: str
@@ -519,7 +525,15 @@ class FscGrades(CanvasConnection):
         return
 
     def plot_assignment_scores(self):
-        assignments = [a for a in self.course.get_assignments() if a.points_possible > 0]
+        assignment_regex = re.compile(self.filter_assignments)
+        assignments = [
+            a for a in self.course.get_assignments()
+            if a.points_possible > 0 and assignment_regex.search(a.name)
+        ]
+        assert assignments, (
+            'No assignment names matched'
+            f' the provided regular expression "{self.filter_assignments}"'
+        )
         assignment_scores_dfs = []
         click.echo("Downloading assignment scores...")
         assignment_progress_bar = tqdm(assignments)
