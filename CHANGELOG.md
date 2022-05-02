@@ -17,6 +17,13 @@ Note that major version zero (0.y.z) is for initial development and anything may
 - Center chart titles and add more elaborate instructions.
 - Show mean and median grade in plot
 
+### Changed
+- Require Python 3.8 instead of 3.6 to ensure that importlib.metadata is in stdlib.
+
+### Fixed
+- Make rounding work with dfs containing None instead of NaN
+  (happens when all values are None for an assignment and there is no type casting)
+
 ## [0.4.0] - 2022-04-30
 
 ### Added
