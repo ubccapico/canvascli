@@ -583,6 +583,7 @@ class FscGrades(CanvasConnection):
         grader_order = assignment_score_df.groupby(
             'Grader'
         )['Score'].mean().sort_values().index.tolist()
+        height = max(80, len(grader_order) * 20)
 
         assignment_central_tendencies = alt.Chart(
                 assignment_score_df
@@ -592,14 +593,13 @@ class FscGrades(CanvasConnection):
             ).transform_fold(
                 fold=['Mean', 'Median'],
                 as_=['Type', 'Percent Grade']
-            ).transform_calculate(
-                y='-3.05',
             ).mark_point(
             size=65,
-            shape='diamond'
+            shape='diamond',
+            fill='white'
         ).encode(
             x='Percent Grade:Q',
-            y='y:Q',
+            y=alt.value(height-6),  # -6 to get the bottom of the marker on the axis line
             color=alt.Color(
                 'Type:N',
                 title='',
@@ -611,7 +611,6 @@ class FscGrades(CanvasConnection):
 
         # Min height=80 for histograms to look nice
         # 20 is the default step size for categorical scale
-        height = max(80, len(grader_order) * 20)
         self.assignment_distributions = alt.hconcat((alt.Chart(
             assignment_score_df,
             height=height,
