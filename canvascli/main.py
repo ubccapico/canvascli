@@ -13,6 +13,7 @@ from urllib.error import URLError
 
 import altair as alt
 import click
+import numpy as np
 import pandas as pd
 from appdirs import user_data_dir
 from canvasapi import Canvas
@@ -535,7 +536,8 @@ class FscGrades(CanvasConnection):
                 )
                 assignment_scores['Assignment'].append(assignment.name)
             assignment_scores_dfs.append(pd.DataFrame(assignment_scores))
-        assignment_score_df = pd.concat(assignment_scores_dfs)
+        # fillna required on pandas >=1.4.0 due to https://github.com/pandas-dev/pandas/issues/46922
+        assignment_score_df = pd.concat(assignment_scores_dfs, ignore_index=True).fillna(np.nan)
         # Sometime a negative number is returned for the grader,
         # which does not make sense, maybe from gradescope?
         assignment_score_df.loc[assignment_score_df['Grader ID'] < 0, 'Grader ID']  = pd.NA
