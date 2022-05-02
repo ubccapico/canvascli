@@ -528,12 +528,12 @@ class FscGrades(CanvasConnection):
             assignment_scores = defaultdict(list)
             for submission in submissions:
                 assignment_scores['User ID'].append(submission.user_id)
-                assignment_scores[f'Grader ID'].append(submission.grader_id)
-                assignment_scores[f'Score'].append(
+                assignment_scores['Grader ID'].append(submission.grader_id)
+                assignment_scores['Score'].append(
                     100 * submission.score / assignment.points_possible
                     if submission.score is not None else None
                 )
-                assignment_scores[f'Assignment'].append(assignment.name)
+                assignment_scores['Assignment'].append(assignment.name)
             assignment_scores_dfs.append(pd.DataFrame(assignment_scores))
         assignment_score_df = pd.concat(assignment_scores_dfs)
         # Sometime a negative number is returned for the grader,
