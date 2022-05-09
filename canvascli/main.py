@@ -661,7 +661,8 @@ class FscGrades(CanvasConnection):
                 title=alt.TitleParams(
                     'Student Assignment Scores',
                     subtitle=[
-                        'Hover near a point to highlight a line and view student info.',
+                        'Hover near a point to highlight a line.',
+                        'Hover directly over a point to view student info.',
                         'Click the three dots button to the right to save this entire page.',
                     ],
                     anchor='middle',
@@ -670,7 +671,11 @@ class FscGrades(CanvasConnection):
             ).mark_point(opacity=0).encode(
             y=alt.Y('Score', scale=alt.Scale(zero=False), title='Assignment Score (%)'),
             detail='User ID',
-            x=alt.X('Assignment', title='')
+            x=alt.X('Assignment', title=''),
+            # Having the tooltip here instead of in the transformed chart
+            # makes it work with nearest,
+            # but significantly slows down the higlighting of the line
+            # tooltip=['Student', 'Student Number', 'Score'],
         )
         width = min(1000, max(400, 80 * assignment_score_df['Assignment'].nunique()))
         self.assignment_scores = (
@@ -682,9 +687,10 @@ class FscGrades(CanvasConnection):
                     scale=alt.Scale(scheme='cividis', reverse=True),
                     title=['Stdev between', 'Assignments']
                 )
-            ) + base.mark_line(size=3, point=True, interpolate='monotone').encode(
-                color=alt.value('maroon'),  # required to color points on line
+            ) + (base.mark_line(size=3, interpolate='monotone', color='maroon')
+            + base.mark_circle(size=70, color='maroon', opacity=1).encode(
                 tooltip=['Student', 'Student Number', 'Score'],
+                )
             ).transform_filter(
                 self.hover
             )).properties(
@@ -785,10 +791,9 @@ class FscGrades(CanvasConnection):
                 )
             ),
             alt.Tooltip(['Name:N', 'Student Number', 'Percent Grade']),
-            color=alt.condition(self.hover, alt.value('maroon'), alt.value('steelblue'))
         )
 
-        strip_overlay = strip.mark_circle(size=80).encode(
+        strip_overlay = strip.mark_circle(size=80, opacity=1).encode(
             color=alt.value('maroon')
         ).transform_filter(
             self.hover
@@ -824,7 +829,7 @@ class FscGrades(CanvasConnection):
         title = alt.TitleParams(
             text=f'Final Grade Distribution {self.subject} {self.course_name}',
             subtitle=[
-                'Hover near a point to view student info and highlight a line.',
+                'Hover near a point to highlight it and view student info.',
                 'Zoom with the mouse wheel and double click to reset the view.',
                 'Changes in the dropdown menus below only affect this chart'
             ],

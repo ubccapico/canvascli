@@ -21,6 +21,7 @@ Note that major version zero (0.y.z) is for initial development and anything may
 ### Changed
 - Require Python 3.8 instead of 3.6 to ensure that importlib.metadata is in stdlib.
 - Make saved messages stand out and simplify final info note.
+- Make hover highlighting more intuitive and better explained.
 
 ### Fixed
 - Make rounding work with dfs containing None instead of NaN
