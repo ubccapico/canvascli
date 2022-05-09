@@ -876,12 +876,13 @@ class FscGrades(CanvasConnection):
         """Show disclaimer and note about manual grade entry of student standings."""
         click.secho('\nNOTE', fg='yellow', bold=True)
         click.echo(
-            '1. Make sure to check the output above for any warning and notes.'
+            '1. Check the output above for any warnings and notes.'
             '\n2. The saved CSV file should automatically be correctly formatted,'
-            '\n   but it is ' + click.style('your responsibility', bold=True) + ' to double check in case there are unexpected changes'
+            '\n   but it is ' + click.style('your responsibility to double check', bold=True) +
+            '\n   since there could be unexpected changes'
             '\n   to how UBC inputs course info on Canvas.'
             '\n3. If you have students that did not take the final exam'
-            '\n   or with a thesis in progress, you will need to enter this info manually.'
+            '\n   you will need to enter this info manually.'
             '\n   Please see https://facultystaff.students.ubc.ca/files/FSCUserGuide.pdf'
             '\n   under "Acceptable Values for Grades Entry" for how to modify the CSV file.')
         return
