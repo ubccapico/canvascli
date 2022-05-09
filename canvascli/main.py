@@ -611,39 +611,40 @@ class FscGrades(CanvasConnection):
 
         # Min height=80 for histograms to look nice
         # 20 is the default step size for categorical scale
-        self.assignment_distributions = alt.hconcat((alt.Chart(
-            assignment_score_df,
-            height=height,
-        ).mark_bar().encode(
-            x=alt.X('Score', bin=alt.Bin(step=5)),
-            y=alt.Y('count()', title='Student Count'),
-        ) + assignment_central_tendencies
-        ).facet(
-            title=alt.TitleParams(
-                'Assignment Score Distributions',
-                subtitle='Hover over the points to see the exact mean and median score.',
-                anchor='middle',
-                dx=25
+        self.assignment_distributions = alt.hconcat((
+            alt.Chart(
+                assignment_score_df,
+                height=height,
+            ).mark_bar().encode(
+                x=alt.X('Score', bin=alt.Bin(step=5)),
+                y=alt.Y('count()', title='Student Count'),
+            ) + assignment_central_tendencies
+            ).facet(
+                title=alt.TitleParams(
+                    'Assignment Score Distributions',
+                    subtitle='Hover over the points to see the exact mean and median score.',
+                    anchor='middle',
+                    dx=25
+                ),
+                row=alt.Row('Assignment', title='', header=alt.Header(labelFontSize=13))
+            ), alt.Chart(
+                assignment_score_df.reset_index(),
+                height=height + 2,
+                title=alt.TitleParams(
+                    'Comparison Between Graders',
+                    subtitle='Hover over the box for detailed grader info.',
+                    anchor='middle',
+                    dx=-40
+                ),
+            ).mark_boxplot(median={'color': 'black'}).encode(
+                x=alt.X('Score', scale=alt.Scale(zero=False)),
+                y=alt.Y('Grader:N', sort=grader_order, title='', axis=alt.Axis(orient='right')),
+                row=alt.Row('Assignment', title='', header=alt.Header(labels=False)),
+                color=alt.Color('Grader:N', sort=grader_order, legend=None)
+            ).resolve_scale(
+                y='independent',  # Don't use the same y-axis ticks for each faceted boxplot
             ),
-            row=alt.Row('Assignment', title='', header=alt.Header(labelFontSize=13))
-        ), alt.Chart(
-            assignment_score_df.reset_index(),
-            height=height + 2,
-            title=alt.TitleParams(
-                'Comparison Between Graders',
-                subtitle='Hover over the box for detailed grader info.',
-                anchor='middle',
-                dx=-40
-            ),
-        ).mark_boxplot(median={'color': 'black'}).encode(
-            x=alt.X('Score', scale=alt.Scale(zero=False)),
-            y=alt.Y('Grader:N', sort=grader_order, title='', axis=alt.Axis(orient='right')),
-            row=alt.Row('Assignment', title='', header=alt.Header(labels=False)),
-            color=alt.Color('Grader:N', sort=grader_order, legend=None)
-        ).resolve_scale(
-            y='independent',  # Don't use the same y-axis ticks for each faceted boxplot
-        ),
-        spacing=60
+            spacing=60
         ).resolve_scale(
             color='independent'  # Don't use the mean/median color range for the boxplot
         )
