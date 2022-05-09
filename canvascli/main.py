@@ -641,10 +641,11 @@ class FscGrades(CanvasConnection):
             row=alt.Row('Assignment', title='', header=alt.Header(labels=False)),
             color=alt.Color('Grader:N', sort=grader_order, legend=None)
         ).resolve_scale(
-            y='independent',
-            color='independent'
+            y='independent',  # Don't use the same y-axis ticks for each faceted boxplot
         ),
         spacing=60
+        ).resolve_scale(
+            color='independent'  # Don't use the mean/median color range for the boxplot
         )
 
         # Plot assignment scores
