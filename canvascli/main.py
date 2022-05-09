@@ -521,7 +521,7 @@ class FscGrades(CanvasConnection):
             self.filename + '.csv',
             index=False
         )
-        click.echo(f'Grades saved to {self.filename}.csv.')
+        click.secho(f'Grades saved to {self.filename}.csv.', bold=True, fg='green')
         return
 
     def plot_assignment_scores(self):
@@ -866,7 +866,7 @@ class FscGrades(CanvasConnection):
                 '\n    }'
                 '\n</style>'
             )
-        click.echo(f'Grade distribution chart saved to {chart_filename}.')
+        click.secho(f'Grade distribution chart saved to {chart_filename}.', bold=True, fg='green')
         if self.open_chart or self.open_chart is None and click.confirm(
                 'Open grade distribution chart?', default=True):
             click.launch(chart_filename)
