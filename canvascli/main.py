@@ -626,7 +626,7 @@ class FscGrades(CanvasConnection):
                     anchor='middle',
                     dx=25
                 ),
-                row=alt.Row('Assignment', title='', header=alt.Header(labelFontSize=13))
+                row=alt.Row('Assignment', title='', header=alt.Header(labelFontSize=12))
             ), alt.Chart(
                 assignment_score_df.reset_index(),
                 height=height + 2,
