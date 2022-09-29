@@ -587,6 +587,9 @@ class FscGrades(CanvasConnection):
         grader_order = assignment_score_df.groupby(
             'Grader'
         )['Score'].mean().sort_values().index.tolist()
+        # assignment_order is only needed because VL does not support maintaining
+        # the orignal order for facets https://github.com/vega/vega-lite/issues/6221
+        assignment_order = assignment_score_df['Assignment'].unique().tolist()
         height = max(80, len(grader_order) * 20)
 
         assignment_central_tendencies = alt.Chart(
@@ -630,7 +633,7 @@ class FscGrades(CanvasConnection):
                     anchor='middle',
                     dx=25
                 ),
-                facet=alt.Facet('Assignment', title=''),
+                facet=alt.Facet('Assignment', title='', sort=assignment_order),
                 columns=1
             ), alt.Chart(
                 assignment_score_df.reset_index(),
@@ -646,7 +649,7 @@ class FscGrades(CanvasConnection):
                     anchor='middle',
                     dx=-40
                 ),
-                facet=alt.Facet('Assignment', title=''),
+                facet=alt.Facet('Assignment', title='', sort=assignment_order),
                 columns=1
             ).resolve_scale(
                 y='independent',  # Don't use the same y-axis ticks for each faceted boxplot
@@ -678,7 +681,7 @@ class FscGrades(CanvasConnection):
             ).mark_point(opacity=0).encode(
             y=alt.Y('Score', scale=alt.Scale(zero=False), title='Assignment Score (%)'),
             detail='User ID',
-            x=alt.X('Assignment', title=''),
+            x=alt.X('Assignment', title='', sort=assignment_order),
             # Having the tooltip here instead of in the transformed chart
             # makes it work with nearest,
             # but significantly slows down the higlighting of the line
