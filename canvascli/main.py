@@ -626,25 +626,28 @@ class FscGrades(CanvasConnection):
             ).facet(
                 title=alt.TitleParams(
                     'Assignment Score Distributions',
-                    subtitle='Hover over the points to see the exact mean and median score.',
+                    subtitle=['Hover over the points to see the exact mean and median score.', ''],
                     anchor='middle',
                     dx=25
                 ),
-                row=alt.Row('Assignment', title='', header=alt.Header(labelFontSize=12))
+                facet=alt.Facet('Assignment', title=''),
+                columns=1
             ), alt.Chart(
                 assignment_score_df.reset_index(),
                 height=height + 2,
-                title=alt.TitleParams(
-                    'Comparison Between Graders',
-                    subtitle='Hover over the box for detailed grader info.',
-                    anchor='middle',
-                    dx=-40
-                ),
             ).mark_boxplot(median={'color': 'black'}).encode(
                 x=alt.X('Score', scale=alt.Scale(zero=False)),
                 y=alt.Y('Grader:N', sort=grader_order, title='', axis=alt.Axis(orient='right')),
-                row=alt.Row('Assignment', title='', header=alt.Header(labels=False)),
                 color=alt.Color('Grader:N', sort=grader_order, legend=None)
+            ).facet(
+                title=alt.TitleParams(
+                    'Comparison Between Graders',
+                    subtitle=['Hover over the box for detailed grader info.', ''],
+                    anchor='middle',
+                    dx=-40
+                ),
+                facet=alt.Facet('Assignment', title=''),
+                columns=1
             ).resolve_scale(
                 y='independent',  # Don't use the same y-axis ticks for each faceted boxplot
             ),
