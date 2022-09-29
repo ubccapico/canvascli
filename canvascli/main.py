@@ -528,8 +528,12 @@ class FscGrades(CanvasConnection):
         assignment_regex = re.compile(self.filter_assignments)
         assignments = [
             a for a in self.course.get_assignments()
-            if a.points_possible > 0 and assignment_regex.search(a.name)
+            if a.published
+              and a.points_possible is not None
+              and a.points_possible > 0
+              and assignment_regex.search(a.name)
         ]
+
         assert assignments, (
             'No assignment names matched'
             f' the provided regular expression "{self.filter_assignments}"'
