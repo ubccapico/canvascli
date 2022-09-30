@@ -405,18 +405,23 @@ class FscGrades(CanvasConnection):
                 'Remember to post all assignments on Canvas'
                 '\nbefore creating the CSV-file to upload to the FSC.'
                 '\nThere are currently unposted Canvas assignments'
-                '\nthat would change the final score of the following students:\n'
             )
-            click.echo(
-                self.canvas_grades
-                    .query(
-                        '@different_unposted_score == True'
-                    )
-                    .to_markdown(
-                        index=False
-                    )
+            students_with_unposted_score = self.canvas_grades.query(
+                '@different_unposted_score == True'
+            )
+            if students_with_unposted_score.shape[0] > 10:
+                click.echo(
+                    'that would change the final score of '
+                    + click.style(f'{students_with_unposted_score.shape[0]} students.', bold=True)
                 )
-            click.echo()
+                click.echo('Showing the first 10 here:\n')
+                click.echo(students_with_unposted_score[:10].to_markdown(index=False))
+            else:
+                click.echo(
+                    'that would change the final score of the following '
+                    + click.style(f'{students_with_unposted_score.shape[0]} students:\n', bold=True)
+                )
+                click.echo(students_with_unposted_score.to_markdown(index=False))
         return
 
     def drop_student_entries(self):

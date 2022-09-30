@@ -25,6 +25,7 @@ Note that major version zero (0.y.z) is for initial development and anything may
 - Filter out unpublished assignment and those missing a max score.
 - Put assignment titles on top of plots instead of to the left.
 - Maintain assignment order from Canvas in all visualizations.
+- Only show a sample of the students with unposted assignments.
 
 ### Fixed
 - Make rounding work with dfs containing None instead of NaN
