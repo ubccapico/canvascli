@@ -61,7 +61,7 @@ your API token has access to.
 Run `canvascli show-courses --help`
 to view all available options.
 
-## Shell completion (optional)
+<details><summary><h2>Shell completion (optional)</h2></summary>
 
 If you want suggestions for subcommands and option flags when you press <kbd>TAB</kbd>
 you can download the corresponding completion file
@@ -93,6 +93,8 @@ not `canvascli.exe`.
 ```sh
 curl -Ss https://raw.githubusercontent.com/joelostblom/canvascli/main/canvascli-complete.bash > ~/.canvascli-complete.bash && echo ". ~/.canvascli-complete.bash" >> ~/.bashrc
 ```
+
+</details>
 
 ## Questions and contributing
 
