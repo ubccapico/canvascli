@@ -216,18 +216,6 @@ def show_courses(api_url, filter_, start_date_):
     return
 
 
-@cli.command()
-def z_compare_TA_grading():
-    """**Not yet implemented**"""
-    return
-
-
-@cli.command()
-def z_review_student_grades():
-    """**Not yet implemented**"""
-    return
-
-
 @dataclass
 class CanvasConnection():
     """Parent class for initializing attributes shared between child classes."""
