@@ -22,12 +22,9 @@ token](https://community.canvaslms.com/t5/Instructor-Guide/How-do-I-manage-API-a
 so do that first if you don't have one already.
 
 > When running `canvascli`,
-you can either enter your Canvas token when prompted at the command line
+you can either paste your Canvas token when prompted at the command line
 (ideally using a password manager, e.g. [KeePassXC](https://keepassxc.org/)),
-or store it in an environment variable named `CANVAS_PAT`
-(if you are using GitBash's default terminal on Windows,
-you will not be able to paste into the terminal prompt
-and defining the environmental variable is required).
+or [store it in an environment variable](https://www.poftut.com/how-to-set-environment-variables-for-linux-windows-bsd-and-macosx/) named `CANVAS_PAT`.
 
 Typing `canvascli` at the command prompt will show the general help message
 including the available sub-commands.
@@ -45,13 +42,14 @@ The file should automatically be correctly formatted,
 but it is a good idea to double check
 in case there are unexpected changes
 to how UBC inputs course info on Canvas.
+
 `canvascli` drops students without a grade by default,
 and creates a few helpful visualizations of the final grades
 and assignment scores.
 Run `canvascli prepare-fsc-grades --help`
 to view all available options.
 
-If you don't know the Canvas id of your course,
+If you don't know the Canvas course id of your course,
 `canvascli` can check for you:
 
 ```shell
@@ -63,9 +61,9 @@ your API token has access to.
 Run `canvascli show-courses --help`
 to view all available options.
 
-## Shell completion
+## Shell completion (optional)
 
-If you want subcommands and options to complete when you press <kbd>TAB</kbd>
+If you want suggestions for subcommands and option flags when you press <kbd>TAB</kbd>
 you can download the corresponding completion file
 from the GitHub repository
 and source it in your terminal's configuration file.
