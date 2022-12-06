@@ -344,6 +344,7 @@ class FscGrades(CanvasConnection):
             surname, preferred_name = enrollment.user['sortable_name'].split(', ')
             canvas_grades['Surname'].append(surname)
             canvas_grades['Preferred Name'].append(preferred_name)
+            canvas_grades['Section'].append(enrollment.course_section_id)
 
             # A warning message is later displayed for these students
             if 'override_score' in enrollment.grades:
@@ -362,9 +363,25 @@ class FscGrades(CanvasConnection):
                     canvas_grades['different_unposted_score'].append(False)
 
         self.canvas_grades = pd.DataFrame(canvas_grades)
+
+        # Extract course section IDs here
+        # We are relying on the same extraction pattern as for the FSC grades,
+        # which should be safe and also do an extra check ot return the entire name
+        # if the course section is not a number
+        # (there could still be an unlucky circumstance where [2] returns a number
+        # but it is not the course section, but that seems unlikely)
+        section_ids_and_names = {
+            section.id: section.name.split()[2]
+            if section.name.split()[2].isdigit()
+            else section.name
+            for section in self.course.get_sections()
+        }
+        self.canvas_grades['Section'] = (
+            self.canvas_grades['Section'].map(section_ids_and_names)
+        )
+
         different_unposted_score = self.canvas_grades.pop('different_unposted_score')
         override_final_score = self.canvas_grades.pop('override_final_score')
-
         # Display a note that some student grade are manually overridden
         if override_final_score.sum() > 0:
             click.secho('\nNOTE', fg='yellow', bold=True)
@@ -560,10 +577,20 @@ class FscGrades(CanvasConnection):
         user_ids_and_names_df = pd.DataFrame.from_dict(
             user_ids_and_names, orient='index', columns=['Name', 'Student Number']
         )
-        assignment_score_df['Grader'] = assignment_score_df['Grader ID'].map(user_ids_and_names_df['Name'])
-        assignment_score_df['Student'] = assignment_score_df['User ID'].map(user_ids_and_names_df['Name'])
+        assignment_score_df['Grader'] = assignment_score_df['Grader ID'].map(
+            user_ids_and_names_df['Name']
+        )
+        assignment_score_df['Student'] = assignment_score_df['User ID'].map(
+            user_ids_and_names_df['Name']
+        )
         assignment_score_df['Student Number'] = assignment_score_df['User ID'].map(
             user_ids_and_names_df['Student Number']
+        )
+        # The section number cannot be extracted via `get_users()`
+        assignment_score_df['Section'] = (
+            assignment_score_df['User ID'].map(
+                self.canvas_grades.set_index('User ID')['Section']
+            )
         )
 
         # Using `round` instead of `Decimal` here
@@ -577,13 +604,19 @@ class FscGrades(CanvasConnection):
             '`User ID` in @self.canvas_grades["User ID"]'
         ).copy()
 
-        grader_order = assignment_score_df.groupby(
-            'Grader'
+        if assignment_score_df['Section'].nunique() > 0:
+            group_col = 'Section'
+        elif assignment_score_df['Grader'].nunique() > 0:
+            group_col = 'Grader'
+        else:
+            group_col = None
+        group_order = assignment_score_df.groupby(
+            group_col
         )['Score'].mean().sort_values().index.tolist()
         # assignment_order is only needed because VL does not support maintaining
         # the orignal order for facets https://github.com/vega/vega-lite/issues/6221
         assignment_order = assignment_score_df['Assignment'].unique().tolist()
-        height = max(80, len(grader_order) * 20)
+        height = max(80, len(group_order) * 20)
 
         assignment_central_tendencies = alt.Chart(
                 assignment_score_df
@@ -633,12 +666,12 @@ class FscGrades(CanvasConnection):
                 height=height + 2,
             ).mark_boxplot(median={'color': 'black'}).encode(
                 x=alt.X('Score', scale=alt.Scale(zero=False)),
-                y=alt.Y('Grader:N', sort=grader_order, title='', axis=alt.Axis(orient='right')),
-                color=alt.Color('Grader:N', sort=grader_order, legend=None)
+                y=alt.Y(f'{group_col}:N', sort=group_order, title='', axis=alt.Axis(orient='right')),
+                color=alt.Color(f'{group_col}:N', sort=group_order, legend=None)
             ).facet(
                 title=alt.TitleParams(
-                    'Comparison Between Graders',
-                    subtitle=['Hover over the box for detailed grader info.', ''],
+                    f'Comparison Between {group_col}s',
+                    subtitle=['Hover over the box for detailed {group_col.lower()}s info.', ''],
                     anchor='middle',
                     dx=-40
                 ),
