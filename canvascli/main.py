@@ -482,8 +482,9 @@ class FscGrades(CanvasConnection):
         # LT hub mentioned that these fields should be safe to extract from the
         # canvas course code (for UBC courses in general), but there is an override
         # option just in case
+        # `_` is for `section` which is now extracted for each student above instead
         self.campus = 'UBC'
-        self.subject, self.course_name, self.section, self.session = self.course.course_code.split()
+        self.subject, self.course_name, _, self.session = self.course.course_code.split()
         if self.override_campus is not None:
             self.campus = self.override_campus
         if self.override_course is not None:
@@ -497,12 +498,12 @@ class FscGrades(CanvasConnection):
         # Add FSC info to the dataframe, standing and standing reason are
         # blank by default and filled out manually when needed
         self.fsc_grades = self.canvas_grades.copy()
-        additional_fsc_fields = ['Campus', 'Course', 'Section', 'Session', 'Subject',
+        additional_fsc_fields = ['Campus', 'Course', 'Session', 'Subject',
                       'Standing', 'Standing Reason']
         # Remove the session number which is only present on Canvas but not FSC
         self.session = self.session[:-1]
         self.fsc_grades[additional_fsc_fields] = (
-            self.campus, self.course_name, self.section, self.session, self.subject, '', '')
+            self.campus, self.course_name, self.session, self.subject, '', '')
 
         # Round to whole percentage format since FSC requires that
         # Using Decimal to always round up .5 instead of rounding to even,
