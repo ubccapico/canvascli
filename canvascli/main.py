@@ -605,19 +605,22 @@ class FscGrades(CanvasConnection):
             '`User ID` in @self.canvas_grades["User ID"]'
         ).copy()
 
-        if assignment_score_df['Section'].nunique() > 0:
+        # Plot scores for individual assignments
+        # Start by figuring out how many groups there are since this determines
+        # chart height
+        group_col = None
+        if assignment_score_df['Section'].nunique() > 1:
             group_col = 'Section'
-        elif assignment_score_df['Grader'].nunique() > 0:
+        elif assignment_score_df['Grader'].nunique() > 1:
             group_col = 'Grader'
-        else:
-            group_col = None
-        group_order = assignment_score_df.groupby(
-            group_col
-        )['Score'].mean().sort_values().index.tolist()
-        # assignment_order is only needed because VL does not support maintaining
-        # the orignal order for facets https://github.com/vega/vega-lite/issues/6221
-        assignment_order = assignment_score_df['Assignment'].unique().tolist()
-        height = max(80, len(group_order) * 20)
+        height = 80
+        if group_col is not None:
+            group_order = assignment_score_df.groupby(
+                group_col
+            )['Score'].mean().sort_values().index.tolist()
+            # Min height=80 for histograms to look nice
+            # 20 is the default step size for categorical scale
+            height = max(height, len(group_order) * 20)
 
         assignment_central_tendencies = alt.Chart(
                 assignment_score_df
@@ -643,16 +646,18 @@ class FscGrades(CanvasConnection):
             tooltip=['Type:N', alt.Tooltip('Percent Grade:Q', format='.3g')]
         )
 
-        # Min height=80 for histograms to look nice
-        # 20 is the default step size for categorical scale
-        self.assignment_distributions = alt.hconcat((
+        # assignment_order is only needed because VL does not support maintaining
+        # the orignal order for facets https://github.com/vega/vega-lite/issues/6221
+        assignment_order = assignment_score_df['Assignment'].unique().tolist()
+        histograms = alt.layer(
             alt.Chart(
                 assignment_score_df,
                 height=height,
             ).mark_bar().encode(
                 x=alt.X('Score', bin=alt.Bin(step=5)),
                 y=alt.Y('count()', title='Student Count'),
-            ) + assignment_central_tendencies
+            ),
+            assignment_central_tendencies
             ).facet(
                 title=alt.TitleParams(
                     'Assignment Score Distributions',
@@ -662,7 +667,10 @@ class FscGrades(CanvasConnection):
                 ),
                 facet=alt.Facet('Assignment', title='', sort=assignment_order),
                 columns=1
-            ), alt.Chart(
+            )
+
+        if group_col is not None:
+            boxplots = alt.Chart(
                 assignment_score_df.reset_index(),
                 height=height + 2,
             ).mark_boxplot(median={'color': 'black'}).encode(
@@ -672,19 +680,25 @@ class FscGrades(CanvasConnection):
             ).facet(
                 title=alt.TitleParams(
                     f'Comparison Between {group_col}s',
-                    subtitle=['Hover over the box for detailed {group_col.lower()}s info.', ''],
+                    subtitle=[f'Hover over the box for detailed {group_col.lower()}s info.', ''],
                     anchor='middle',
                     dx=-40
                 ),
                 facet=alt.Facet('Assignment', title='', sort=assignment_order),
                 columns=1
             ).resolve_scale(
-                y='independent',  # Don't use the same y-axis ticks for each faceted boxplot
-            ),
-            spacing=60
-        ).resolve_scale(
-            color='independent'  # Don't use the mean/median color range for the boxplot
-        )
+                y='independent'  # Don't use the same y-axis ticks for each faceted boxplot
+            )
+
+            self.assignment_distributions = alt.hconcat(
+                histograms,
+                boxplots,
+                spacing=60
+            ).resolve_scale(
+                color='independent'  # Don't use the mean/median color range for the boxplot
+            )
+        else:
+            self.assignment_distributions = histograms
 
         # Plot assignment scores
         assignment_score_df['Assignment scores stdev'] = assignment_score_df['User ID'].map(
