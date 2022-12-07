@@ -132,9 +132,9 @@ def cli():
               ' the grade distribution chart automatically.'
               ' Default: Ask at the end')
 @click.option('--filter-assignments', default='.*', type=str, help='Regex to filter'
-              ' which assignments are included in the visualization (case-sensitive).'
-              ' Does not affect the final grade calculation.'
-              ' Default: All (.*)')
+              ' which assignments are included in the assignment-specific visualizations'
+              ' (case-sensitive). Does not affect the calculation or visualization'
+              ' of the final grades. Default: All (.*)')
 @click.option('--group-by', default=None, type=click.Choice(['Section', 'Grader']),
               help='Variable to group the visualizations by. A separate box plot'
               ' will be created for each group. Default: None (`Section` if there'
