@@ -135,6 +135,11 @@ def cli():
               ' which assignments are included in the visualization (case-sensitive).'
               ' Does not affect the final grade calculation.'
               ' Default: All (.*)')
+@click.option('--group-by', default=None, type=click.Choice(['Section', 'Grader']),
+              help='Variable to group the visualizations by. A separate box plot'
+              ' will be created for each group. Default: None (`Section` if there'
+              ' are multiple sections, otherwise `Grader` if there are multiple graders,'
+              ' otherwise nothing)')
 @click.option('--override-campus', default=None, help='Override the automatically'
               ' detected course campus in the CSV file with this text. Default: None')
 @click.option('--override-course', default=None, help='Override the automatically'
@@ -147,7 +152,7 @@ def cli():
               ' detected course subject in the CSV file with this text. Default: None')
 def prepare_fsc_grades(course_id, filename, api_url, student_status,
                        drop_students, drop_threshold, drop_na, open_chart,
-                       filter_assignments, override_campus, override_course,
+                       filter_assignments, group_by, override_campus, override_course,
                        override_section, override_session, override_subject):
     """Prepare course grades for FSC submission.
     \b
@@ -171,7 +176,7 @@ def prepare_fsc_grades(course_id, filename, api_url, student_status,
     """
     fsc_grades = FscGrades(
         course_id, filename, api_url, student_status, drop_students,
-        drop_threshold, drop_na, open_chart, filter_assignments, override_campus,
+        drop_threshold, drop_na, open_chart, filter_assignments, group_by, override_campus,
         override_course, override_section, override_session, override_subject)
     fsc_grades.connect_to_canvas()
     fsc_grades.connect_to_course()
@@ -306,6 +311,7 @@ class FscGrades(CanvasConnection):
     drop_na: bool
     open_chart: bool
     filter_assignments: str
+    group_by: str
     override_campus: str
     override_course: str
     override_section: str
@@ -608,15 +614,15 @@ class FscGrades(CanvasConnection):
         # Plot scores for individual assignments
         # Start by figuring out how many groups there are since this determines
         # chart height
-        group_col = None
-        if assignment_score_df['Section'].nunique() > 1:
-            group_col = 'Section'
-        elif assignment_score_df['Grader'].nunique() > 1:
-            group_col = 'Grader'
+        if self.group_by is None:
+            if assignment_score_df['Section'].nunique() > 1:
+                self.group_by = 'Section'
+            elif assignment_score_df['Grader'].nunique() > 1:
+                self.group_by = 'Grader'
         height = 80
-        if group_col is not None:
+        if self.group_by is not None:
             group_order = assignment_score_df.groupby(
-                group_col
+                self.group_by
             )['Score'].mean().sort_values().index.tolist()
             # Min height=80 for histograms to look nice
             # 20 is the default step size for categorical scale
@@ -669,18 +675,18 @@ class FscGrades(CanvasConnection):
                 columns=1
             )
 
-        if group_col is not None:
+        if self.group_by is not None:
             boxplots = alt.Chart(
                 assignment_score_df.reset_index(),
                 height=height + 2,
             ).mark_boxplot(median={'color': 'black'}).encode(
                 x=alt.X('Score', scale=alt.Scale(zero=False)),
-                y=alt.Y(f'{group_col}:N', sort=group_order, title='', axis=alt.Axis(orient='right')),
-                color=alt.Color(f'{group_col}:N', sort=group_order, legend=None)
+                y=alt.Y(f'{self.group_by}:N', sort=group_order, title='', axis=alt.Axis(orient='right')),
+                color=alt.Color(f'{self.group_by}:N', sort=group_order, legend=None)
             ).facet(
                 title=alt.TitleParams(
-                    f'Comparison Between {group_col}s',
-                    subtitle=[f'Hover over the box for detailed {group_col.lower()}s info.', ''],
+                    f'Comparison Between {self.group_by}s',
+                    subtitle=[f'Hover over the box for detailed {self.group_by.lower()}s info.', ''],
                     anchor='middle',
                     dx=-40
                 ),
