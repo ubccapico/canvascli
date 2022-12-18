@@ -765,12 +765,12 @@ class FscGrades(CanvasConnection):
             self.fsc_grades.rename(
                 columns={
                     'Unposted Percent Grade': 'FSC Rounded',
-                    'Unposted Exact Percent Grade': 'Exact'
+                    'Unposted Exact Percent Grade': 'Exact Percent'
                 }
-            # Combine the rounded and raw *unposted* scores 
+            # Combine the rounded and raw *unposted* scores
             ).melt(
                 id_vars=['Preferred Name', 'Surname', 'Student Number', 'User ID'],
-                value_vars=['FSC Rounded', 'Exact'],
+                value_vars=['FSC Rounded', 'Exact Percent'],
                 value_name='Unposted Grade',
                 var_name='Percent Type'
             ),
@@ -778,12 +778,12 @@ class FscGrades(CanvasConnection):
             self.fsc_grades.rename(
                 columns={
                     'Percent Grade': 'FSC Rounded',
-                    'Exact Percent Grade': 'Exact'
+                    'Exact Percent Grade': 'Exact Percent'
                 }
-            # Combine the rounded and raw *posted* scores 
+            # Combine the rounded and raw *posted* scores
             ).melt(
                 id_vars=['Preferred Name', 'Surname', 'Student Number', 'User ID'],
-                value_vars=['FSC Rounded', 'Exact'],
+                value_vars=['FSC Rounded', 'Exact Percent'],
                 value_name='Posted Grade',
                 var_name='Percent Type'
             )
@@ -798,7 +798,7 @@ class FscGrades(CanvasConnection):
         # Set up selection elements
         grade_status_dropdown = alt.binding_select(
             options=['Posted Grade', 'Unposted Grade'],
-            name='Grade Status '
+            name=' '
         )
         grade_status_selection = alt.selection_single(
             fields=['Grade Status'],
@@ -806,13 +806,13 @@ class FscGrades(CanvasConnection):
             init={'Grade Status': 'Unposted Grade'}
         )
         percent_type_dropdown = alt.binding_select(
-            options=['FSC Rounded', 'Exact'],
-            name='Percent Type '
+            options=['FSC Rounded', 'Exact Percent'],
+            name=' '
         )
         percent_type_selection = alt.selection_single(
             fields=['Percent Type'],
             bind=percent_type_dropdown,
-            init={'Percent Type': 'Exact'}
+            init={'Percent Type': 'Exact Percent'}
         )
 
         # Plot distribution
@@ -901,7 +901,7 @@ class FscGrades(CanvasConnection):
             subtitle=[
                 'Hover near a point to view student info.',
                 'Hover over the box to view exact summary statistics.',
-                'Changes in the dropdown menus below only affect this chart'
+                'Changes in the dropdown menus below only affect this chart',
             ],
             anchor='middle',
             dx=25
@@ -909,21 +909,26 @@ class FscGrades(CanvasConnection):
 
         # Concatenate, add filters, and save the chart
         chart_filename = self.filename + '.html'
-        alt.vconcat((alt.vconcat(
-            hist,
-            # strip on top so that individual observations are always visible
-            strip.add_selection(self.hover).interactive() + strip_overlay,
-            box,
-            spacing=0
-        ).properties(
-            title=title
-        ).resolve_scale(
-            x='shared'
-        ).transform_filter(
-                percent_type_selection & grade_status_selection
-        ).add_selection(
-            percent_type_selection, grade_status_selection
-        ) | self.assignment_scores), self.assignment_distributions, spacing=60
+        alt.vconcat(
+            (
+                alt.vconcat(
+                    hist,
+                    # strip on top so that individual observations are always visible
+                    strip.add_selection(self.hover).interactive() + strip_overlay,
+                    box,
+                    spacing=0
+                ).properties(
+                    title=title
+                ).resolve_scale(
+                    x='shared'
+                ).transform_filter(
+                        percent_type_selection & grade_status_selection
+                ).add_selection(
+                    percent_type_selection, grade_status_selection
+                ) | self.assignment_scores
+            ),
+            self.assignment_distributions,
+            spacing=30
         ).resolve_scale(
             color='independent'
         ).configure_view(
@@ -939,8 +944,13 @@ class FscGrades(CanvasConnection):
                 '\n        font-family: sans-serif;'
                 '\n        font-size: 12px;'
                 '\n        position: absolute;'
-                '\n        left: 60px;'
-                '\n        top: 395px;'
+                '\n        opacity: 0.75;'
+                '\n        left: 45px;'
+                '\n        top: 65px;'
+                '\n    }'
+                # Space between dropdowns
+                '\n    select {'
+                '\n        margin-block: 1px;'
                 '\n    }'
                 '\n</style>'
             )
