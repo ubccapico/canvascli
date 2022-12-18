@@ -740,7 +740,7 @@ class FscGrades(CanvasConnection):
                     subtitle=[
                         'Hover near a point to highlight a line.',
                         'Hover directly over a point to view student info.',
-                        'Click the three dots button to the right to save this entire page.',
+                        'Click the "..." button to the right to save this page as PNG/SVG.',
                     ],
                     anchor='start',
                     dx=40
