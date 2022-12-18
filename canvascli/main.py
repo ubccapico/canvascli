@@ -667,11 +667,12 @@ class FscGrades(CanvasConnection):
             ).facet(
                 title=alt.TitleParams(
                     'Assignment Score Distributions',
-                    subtitle=['Hover over the points to see the exact mean and median score.', ''],
-                    anchor='middle',
-                    dx=25
+                    subtitle=['Hover over the points to see the exact mean and median score.'],
+                    anchor='start',
+                    dx=35,
+                    dy=-5
                 ),
-                facet=alt.Facet('Assignment', title='', sort=assignment_order),
+                facet=alt.Facet('Assignment', title='', sort=assignment_order, header=alt.Header(labelPadding=-5)),
                 columns=1
             )
 
@@ -686,11 +687,11 @@ class FscGrades(CanvasConnection):
             ).facet(
                 title=alt.TitleParams(
                     f'Comparison Between {self.group_by}s',
-                    subtitle=[f'Hover over the box for detailed {self.group_by.lower()}s info.', ''],
-                    anchor='middle',
-                    dx=-40
+                    subtitle=[f'Hover over the box for detailed {self.group_by.lower()}s info.'],
+                    anchor='start',
+                    dy=-5
                 ),
-                facet=alt.Facet('Assignment', title='', sort=assignment_order),
+                facet=alt.Facet('Assignment', title='', sort=assignment_order, header=alt.Header(labelPadding=-5)),
                 columns=1
             ).resolve_scale(
                 y='independent'  # Don't use the same y-axis ticks for each faceted boxplot
@@ -699,7 +700,7 @@ class FscGrades(CanvasConnection):
             self.assignment_distributions = alt.hconcat(
                 histograms,
                 boxplots,
-                spacing=60
+                spacing=80
             ).resolve_scale(
                 color='independent'  # Don't use the mean/median color range for the boxplot
             )
@@ -722,8 +723,8 @@ class FscGrades(CanvasConnection):
                         'Hover directly over a point to view student info.',
                         'Click the three dots button to the right to save this entire page.',
                     ],
-                    anchor='middle',
-                    dx=25
+                    anchor='start',
+                    dx=40
                 ),
             ).mark_point(opacity=0).encode(
             y=alt.Y('Score', scale=alt.Scale(zero=False), title='Assignment Score (%)'),
@@ -903,14 +904,14 @@ class FscGrades(CanvasConnection):
                 'Hover over the box to view exact summary statistics.',
                 'Changes in the dropdown menus below only affect this chart',
             ],
-            anchor='middle',
-            dx=25
+            anchor='start',
+            dx=35
         )
 
         # Concatenate, add filters, and save the chart
         chart_filename = self.filename + '.html'
         alt.vconcat(
-            (
+            alt.hconcat(
                 alt.vconcat(
                     hist,
                     # strip on top so that individual observations are always visible
@@ -925,10 +926,12 @@ class FscGrades(CanvasConnection):
                         percent_type_selection & grade_status_selection
                 ).add_selection(
                     percent_type_selection, grade_status_selection
-                ) | self.assignment_scores
+                ),
+                self.assignment_scores,
+                spacing=40
             ),
             self.assignment_distributions,
-            spacing=30
+            spacing=40
         ).resolve_scale(
             color='independent'
         ).configure_view(
@@ -945,7 +948,7 @@ class FscGrades(CanvasConnection):
                 '\n        font-size: 12px;'
                 '\n        position: absolute;'
                 '\n        opacity: 0.75;'
-                '\n        left: 45px;'
+                '\n        left: 42px;'
                 '\n        top: 65px;'
                 '\n    }'
                 # Space between dropdowns
