@@ -187,8 +187,9 @@ def prepare_fsc_grades(course_id, filename, api_url, student_status,
         click.echo('Did not find any assigned grades, exiting.')
     else:
         fsc_grades.save_fsc_grades_to_file()
-        fsc_grades.plot_assignment_scores()
         fsc_grades.plot_fsc_grade_distribution()
+        fsc_grades.plot_assignment_scores()
+        fsc_grades.layout_and_save_charts()
         fsc_grades.show_manual_grade_entry_note()
     return
 
@@ -612,21 +613,30 @@ class FscGrades(CanvasConnection):
         ).copy()
 
         # Plot scores for individual assignments
-        # Start by figuring out how many groups there are since this determines
-        # chart height
+        # Start by figuring out how many groups there are to set chart height
+        # and in what order to sort
         if self.group_by is None:
             if assignment_score_df['Section'].nunique() > 1:
                 self.group_by = 'Section'
             elif assignment_score_df['Grader'].nunique() > 1:
                 self.group_by = 'Grader'
         height = 80
+        # If group_by is set either manually or automatically above
         if self.group_by is not None:
-            group_order = assignment_score_df.groupby(
-                self.group_by
-            )['Score'].mean().sort_values().index.tolist()
+            if self.group_by == 'Section':
+                self.group_order = self.section_order
+            elif self.group_by == 'Grader':
+                self.group_order = (
+                    assignment_score_df
+                    .groupby(self.group_by)
+                    ['Score']
+                    .median()
+                    .sort_values()
+                    .index.tolist()
+                )
             # Min height=80 for histograms to look nice
             # 20 is the default step size for categorical scale
-            height = max(height, len(group_order) * 20)
+            height = max(height, len(self.group_order) * 20)
 
         # assignment_order is only needed because VL does not support maintaining
         # the orignal order for facets https://github.com/vega/vega-lite/issues/6221
@@ -723,9 +733,6 @@ class FscGrades(CanvasConnection):
         assignment_score_df['Assignment scores stdev'] = assignment_score_df['User ID'].map(
             assignment_score_df.groupby('User ID')['Score'].std()
         )
-        self.hover = alt.selection_single(
-            fields=['User ID'], on='mouseover', nearest=True, empty='none'
-        )
         base = alt.Chart(
                 assignment_score_df,
                 title=alt.TitleParams(
@@ -813,7 +820,7 @@ class FscGrades(CanvasConnection):
             options=['Posted Grade', 'Unposted Grade'],
             name=' '
         )
-        grade_status_selection = alt.selection_single(
+        self.grade_status_selection = alt.selection_single(
             fields=['Grade Status'],
             bind=grade_status_dropdown,
             init={'Grade Status': 'Unposted Grade'}
@@ -822,14 +829,14 @@ class FscGrades(CanvasConnection):
             options=['FSC Rounded', 'Exact Percent'],
             name=' '
         )
-        percent_type_selection = alt.selection_single(
+        self.percent_type_selection = alt.selection_single(
             fields=['Percent Type'],
             bind=percent_type_dropdown,
             init={'Percent Type': 'Exact Percent'}
         )
 
         # Plot distribution
-        hist = alt.Chart(self.fsc_grades_for_viz, height=180).mark_bar().encode(
+        self.hist = alt.Chart(self.fsc_grades_for_viz, height=180).mark_bar().encode(
             alt.X('Percent Grade', bin=alt.Bin(step=5), title='', axis=alt.Axis(labels=False)),
             alt.Y('count()', title='Student Count')
         )
@@ -842,7 +849,7 @@ class FscGrades(CanvasConnection):
             alt.X('Percent Grade', title='Final Percent Grade'),
             y=alt.value(10)
         )
-        box = alt.layer(
+        self.box = alt.layer(
             box_base,
             box_base.mark_point(size=25, shape='diamond', filled=True).encode(
                 alt.X('mean(Percent Grade)', scale=alt.Scale(zero=False)),
@@ -868,7 +875,7 @@ class FscGrades(CanvasConnection):
         )
 
         # Plot all observations
-        strip = alt.Chart(self.fsc_grades_for_viz, height=70).mark_point(
+        self.strip = alt.Chart(self.fsc_grades_for_viz, height=70).mark_point(
             size=20
         ).transform_calculate(
             # Generate Gaussian jitter with a Box-Muller transform
@@ -902,7 +909,10 @@ class FscGrades(CanvasConnection):
             alt.Tooltip(['Name:N', 'Student Number', 'Percent Grade']),
         )
 
-        strip_overlay = strip.mark_circle(size=80, opacity=1).encode(
+        self.hover = alt.selection_single(
+            fields=['User ID'], on='mouseover', nearest=True, empty='none'
+        )
+        self.strip_overlay = self.strip.mark_circle(size=80, opacity=1).encode(
             color=alt.value('maroon')
         ).transform_filter(
             self.hover
@@ -911,9 +921,8 @@ class FscGrades(CanvasConnection):
         # Compare sections if there are more than one
         if self.fsc_grades_for_viz['Section'].nunique() > 1:
             title_sections = alt.TitleParams(
-                text=['', 'Comparison between sections'],
-                anchor='start',
-                fontWeight='normal'
+                text=['', 'Comparison Between Sections'],
+                anchor='start'
             )
             colorscheme_sections = [
             # Tableau without the first blue
@@ -955,7 +964,7 @@ class FscGrades(CanvasConnection):
                     scale=alt.Scale(range=colorscheme_sections)
                 )
             )
-            box_sections = alt.layer(
+            self.box_sections = alt.layer(
                 box_base_sections,
                 box_base_sections.mark_point(size=25, shape='diamond', filled=True).encode(
                     alt.X('mean(Percent Grade)', scale=alt.Scale(zero=False)),
@@ -981,7 +990,9 @@ class FscGrades(CanvasConnection):
                     )
                 )
             )
+        return
 
+    def layout_and_save_charts(self):
         # Add instructions
         title = alt.TitleParams(
             text=f'Final Grade Distribution {self.subject} {self.course_name}',
@@ -999,20 +1010,19 @@ class FscGrades(CanvasConnection):
         alt.vconcat(
             alt.hconcat(
                 alt.vconcat(
-                    hist,
-                    # strip on top so that individual observations are always visible
-                    strip.add_selection(self.hover).interactive() + strip_overlay,
-                    box,
-                    box_sections,
+                    self.hist,
+                    self.strip.add_selection(self.hover).interactive() + self.strip_overlay,
+                    self.box,
+                    self.box_sections,
                     spacing=0
                 ).properties(
                     title=title
                 ).resolve_scale(
                     x='shared'
                 ).transform_filter(
-                    percent_type_selection & grade_status_selection
+                    self.percent_type_selection & self.grade_status_selection
                 ).add_selection(
-                    percent_type_selection, grade_status_selection
+                    self.percent_type_selection, self.grade_status_selection
                 ),
                 self.assignment_scores,
                 spacing=40
