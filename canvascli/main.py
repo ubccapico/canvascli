@@ -782,7 +782,7 @@ class FscGrades(CanvasConnection):
                 }
             # Combine the rounded and raw *unposted* scores
             ).melt(
-                id_vars=['Preferred Name', 'Surname', 'Student Number', 'User ID'],
+                id_vars=['Preferred Name', 'Surname', 'Student Number', 'User ID', 'Section'],
                 value_vars=['FSC Rounded', 'Exact Percent'],
                 value_name='Unposted Grade',
                 var_name='Percent Type'
@@ -795,14 +795,14 @@ class FscGrades(CanvasConnection):
                 }
             # Combine the rounded and raw *posted* scores
             ).melt(
-                id_vars=['Preferred Name', 'Surname', 'Student Number', 'User ID'],
+                id_vars=['Preferred Name', 'Surname', 'Student Number', 'User ID', 'Section'],
                 value_vars=['FSC Rounded', 'Exact Percent'],
                 value_name='Posted Grade',
                 var_name='Percent Type'
             )
         # Combine the posted and unposted scores
         ).melt(
-            id_vars=['Preferred Name', 'Surname', 'Student Number', 'User ID', 'Percent Type'],
+            id_vars=['Preferred Name', 'Surname', 'Student Number', 'User ID', 'Percent Type', 'Section'],
             value_vars=['Unposted Grade', 'Posted Grade'],
             value_name='Percent Grade',
             var_name='Grade Status'
@@ -908,6 +908,80 @@ class FscGrades(CanvasConnection):
             self.hover
         )
 
+        # Compare sections if there are more than one
+        if self.fsc_grades_for_viz['Section'].nunique() > 1:
+            title_sections = alt.TitleParams(
+                text=['', 'Comparison between sections'],
+                anchor='start',
+                fontWeight='normal'
+            )
+            colorscheme_sections = [
+            # Tableau without the first blue
+            # since I already use that for all sections togethter
+                 '#f58518',
+                 '#e45756',
+                 '#72b7b2',
+                 '#54a24b',
+                 '#eeca3b',
+                 '#b279a2',
+                 '#ff9da6',
+                 '#9d755d',
+                 '#bab0ac'
+            ]
+
+            self.section_order = (
+                self.fsc_grades_for_viz
+                .groupby('Section')
+                ['Percent Grade']
+                .median()
+                .sort_values()
+                .index.tolist()
+            )
+            box_base_sections = alt.Chart(
+                self.fsc_grades_for_viz,
+                title=title_sections
+            ).mark_boxplot(outliers=False, median={'color': 'black'}).encode(
+                alt.X('Percent Grade', title='Final Percent Grade'),
+                alt.Y(
+                    'Section:N',
+                    sort=self.section_order,
+                    title='',
+                    axis=alt.Axis(orient='right', domain=False)
+                ),
+                alt.Color(
+                    'Section:N',
+                    sort=self.section_order,
+                    legend=None,
+                    scale=alt.Scale(range=colorscheme_sections)
+                )
+            )
+            box_sections = alt.layer(
+                box_base_sections,
+                box_base_sections.mark_point(size=25, shape='diamond', filled=True).encode(
+                    alt.X('mean(Percent Grade)', scale=alt.Scale(zero=False)),
+                    alt.Y(f'{self.group_by}:N', sort=self.section_order, title='', axis=alt.Axis(orient='right', domain=False)),
+                    color=alt.value('#353535')
+                ),
+                # Transparent tooltip box
+                box_base_sections.transform_aggregate(
+                    min="min(Percent Grade)",
+                    max="max(Percent Grade)",
+                    mean="mean(Percent Grade)",
+                    median="median(Percent Grade)",
+                    q1="q1(Percent Grade)",
+                    q3="q3(Percent Grade)",
+                    count="count()",
+                    groupby=[f'{self.group_by}']
+                ).mark_bar(opacity=0).encode(
+                    x='q1:Q',
+                    x2='q3:Q',
+                    tooltip=alt.Tooltip(
+                        ['min:Q', 'q1:Q', 'mean:Q', 'median:Q', 'q3:Q', 'max:Q', 'count:Q'],
+                        format='.1f'
+                    )
+                )
+            )
+
         # Add instructions
         title = alt.TitleParams(
             text=f'Final Grade Distribution {self.subject} {self.course_name}',
@@ -929,13 +1003,14 @@ class FscGrades(CanvasConnection):
                     # strip on top so that individual observations are always visible
                     strip.add_selection(self.hover).interactive() + strip_overlay,
                     box,
+                    box_sections,
                     spacing=0
                 ).properties(
                     title=title
                 ).resolve_scale(
                     x='shared'
                 ).transform_filter(
-                        percent_type_selection & grade_status_selection
+                    percent_type_selection & grade_status_selection
                 ).add_selection(
                     percent_type_selection, grade_status_selection
                 ),
