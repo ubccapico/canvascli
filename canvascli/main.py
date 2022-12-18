@@ -832,7 +832,7 @@ class FscGrades(CanvasConnection):
         )
         box = alt.layer(
             box_base,
-            box_base.mark_circle(size=20).encode(
+            box_base.mark_point(size=25, shape='diamond', filled=True).encode(
                 alt.X('mean(Percent Grade)', scale=alt.Scale(zero=False)),
                 color=alt.value('#353535')
             ),
