@@ -816,9 +816,42 @@ class FscGrades(CanvasConnection):
         )
 
         # Plot distribution
-        hist = alt.Chart(self.fsc_grades_for_viz, height=200).mark_bar().encode(
+        hist = alt.Chart(self.fsc_grades_for_viz, height=180).mark_bar().encode(
             alt.X('Percent Grade', bin=alt.Bin(step=5), title='', axis=alt.Axis(labels=False)),
             alt.Y('count()', title='Student Count')
+        )
+
+        # Plot box
+        box_base = alt.Chart(
+            self.fsc_grades_for_viz,
+            height=20
+        ).mark_boxplot(outliers=False, median={'color': 'black'}).encode(
+            alt.X('Percent Grade', title='Final Percent Grade'),
+            y=alt.value(10)
+        )
+        box = alt.layer(
+            box_base,
+            box_base.mark_circle(size=20).encode(
+                alt.X('mean(Percent Grade)', scale=alt.Scale(zero=False)),
+                color=alt.value('#353535')
+            ),
+            # Transparent tooltip box
+            box_base.transform_aggregate(
+                min="min(Percent Grade)",
+                max="max(Percent Grade)",
+                mean="mean(Percent Grade)",
+                median="median(Percent Grade)",
+                q1="q1(Percent Grade)",
+                q3="q3(Percent Grade)",
+                count="count()",
+            ).mark_bar(opacity=0).encode(
+                x='q1:Q',
+                x2='q3:Q',
+                tooltip=alt.Tooltip(
+                    ['min:Q', 'q1:Q', 'mean:Q', 'median:Q', 'q3:Q', 'max:Q', 'count:Q'],
+                    format='.1f'
+                )
+            )
         )
 
         # Plot all observations
@@ -829,15 +862,21 @@ class FscGrades(CanvasConnection):
             jitter='sqrt(-2*log(random()))*cos(2*PI*random())',
             Name='datum["Preferred Name"] + " " + datum["Surname"]'
         ).encode(
-            alt.X('Percent Grade',
-                title='Final Percent Grade',
+            alt.X(
+                'Percent Grade',
+                title='',
+                axis=alt.Axis(
+                    labels=False,
+                    ticks=False,
+                    domain=False
+                ),
                 scale=alt.Scale(
                     zero=False,
                     nice=False,
-                    padding=5
                 )
             ),
-            alt.Y('jitter:Q',
+            alt.Y(
+                'jitter:Q',
                 scale=alt.Scale(padding=2),
                 axis=alt.Axis(
                     domain=False,
@@ -856,38 +895,12 @@ class FscGrades(CanvasConnection):
             self.hover
         )
 
-        # Plot central tendencies
-        central_tendencies = alt.Chart(
-                self.fsc_grades_for_viz
-            ).transform_aggregate(
-                Mean='mean(Percent Grade)',
-                Median='median(Percent Grade)',
-            ).transform_fold(
-                fold=['Mean', 'Median'],
-                as_=['Type', 'Percent Grade']
-            ).transform_calculate(
-                y='-3.05',
-            ).mark_point(
-            size=65,
-            shape='diamond'
-        ).encode(
-            x='Percent Grade:Q',
-            y='y:Q',
-            color=alt.Color(
-                'Type:N',
-                title='',
-                scale=alt.Scale(range=['coral', 'rebeccapurple']),
-                legend=alt.Legend(legendY=300, legendX=295, orient='none', columns=2)
-            ),
-            tooltip=['Type:N', alt.Tooltip('Percent Grade:Q', format='.3g')]
-        )
-
         # Add instructions
         title = alt.TitleParams(
             text=f'Final Grade Distribution {self.subject} {self.course_name}',
             subtitle=[
-                'Hover near a point to highlight it and view student info.',
-                'Zoom with the mouse wheel and double click to reset the view.',
+                'Hover near a point to view student info.',
+                'Hover over the box to view exact summary statistics.',
                 'Changes in the dropdown menus below only affect this chart'
             ],
             anchor='middle',
@@ -899,7 +912,8 @@ class FscGrades(CanvasConnection):
         alt.vconcat((alt.vconcat(
             hist,
             # strip on top so that individual observations are always visible
-            strip.add_selection(self.hover).interactive() + strip_overlay + central_tendencies,
+            strip.add_selection(self.hover).interactive() + strip_overlay,
+            box,
             spacing=0
         ).properties(
             title=title
@@ -912,6 +926,8 @@ class FscGrades(CanvasConnection):
         ) | self.assignment_scores), self.assignment_distributions, spacing=60
         ).resolve_scale(
             color='independent'
+        ).configure_view(
+            stroke=None
         ).save(
             chart_filename
         )
