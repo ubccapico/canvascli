@@ -628,53 +628,65 @@ class FscGrades(CanvasConnection):
             # 20 is the default step size for categorical scale
             height = max(height, len(group_order) * 20)
 
-        assignment_central_tendencies = alt.Chart(
-                assignment_score_df
-            ).transform_aggregate(
-                Mean='mean(Score)',
-                Median='median(Score)',
-            ).transform_fold(
-                fold=['Mean', 'Median'],
-                as_=['Type', 'Percent Grade']
-            ).mark_point(
-            size=65,
-            shape='diamond',
-            fill='white'
-        ).encode(
-            x='Percent Grade:Q',
-            y=alt.value(height-6),  # -6 to get the bottom of the marker on the axis line
-            color=alt.Color(
-                'Type:N',
-                title='',
-                scale=alt.Scale(range=['coral', 'rebeccapurple']),
-                legend=None
-            ),
-            tooltip=['Type:N', alt.Tooltip('Percent Grade:Q', format='.3g')]
-        )
-
         # assignment_order is only needed because VL does not support maintaining
         # the orignal order for facets https://github.com/vega/vega-lite/issues/6221
         assignment_order = assignment_score_df['Assignment'].unique().tolist()
+
+        boxplot_base = alt.Chart(
+            assignment_score_df
+        ).mark_boxplot(median={'color': 'black'}).encode(
+            alt.X('Score', scale=alt.Scale(zero=False)),
+            y=alt.value(height + 10),
+        )
+        boxplots = alt.layer(
+            boxplot_base,
+            boxplot_base.mark_point(size=30, shape='diamond', filled=True).encode(
+                alt.X('mean(Score)', scale=alt.Scale(zero=False)),
+                color=alt.value('#353535')
+            ),
+            boxplot_base.transform_aggregate(
+                min="min(Score)",
+                max="max(Score)",
+                mean="mean(Score)",
+                median="median(Score)",
+                q1="q1(Score)",
+                q3="q3(Score)",
+                count="count()",
+            # Without setting the height here the tooltip region is too narrow,
+            # and the height of the boxplot chart does not matter as it does for the overall grades boxplot,
+            # not sure why it's different.
+            ).mark_bar(opacity=0, height=20).encode(
+                x='q1:Q',
+                x2='q3:Q',
+                tooltip=alt.Tooltip(
+                    ['min:Q', 'q1:Q', 'mean:Q', 'median:Q', 'q3:Q', 'max:Q', 'count:Q'],
+                    format='.1f'
+                )
+            )
+        )
+
         histograms = alt.layer(
             alt.Chart(
                 assignment_score_df,
                 height=height,
             ).mark_bar().encode(
-                x=alt.X('Score', bin=alt.Bin(step=5)),
+                x=alt.X('Score', bin=alt.Bin(step=5), axis=alt.Axis(offset=20)),
                 y=alt.Y('count()', title='Student Count'),
             ),
-            assignment_central_tendencies
-            ).facet(
-                title=alt.TitleParams(
-                    'Assignment Score Distributions',
-                    subtitle=['Hover over the points to see the exact mean and median score.'],
-                    anchor='start',
-                    dx=35,
-                    dy=-5
-                ),
-                facet=alt.Facet('Assignment', title='', sort=assignment_order, header=alt.Header(labelPadding=-5)),
-                columns=1
-            )
+            boxplots,
+        ).facet(
+            title=alt.TitleParams(
+                'Assignment Score Distributions',
+                subtitle=['Hover over the points to see the exact mean and median score.'],
+                anchor='start',
+                dx=35,
+                dy=-5
+            ),
+            facet=alt.Facet('Assignment', title='', sort=assignment_order, header=alt.Header(labelPadding=-5)),
+            columns=1
+        ).resolve_axis(
+            x='independent'
+        )
 
         if self.group_by is not None:
             boxplots = alt.Chart(
