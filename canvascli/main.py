@@ -379,7 +379,7 @@ class FscGrades(CanvasConnection):
         # but it is not the course section, but that seems unlikely)
         section_ids_and_names = {
             section.id: section.name.split()[2]
-            if section.name.split()[2].isdigit()
+            if section.name.split()[2].isdigit() or section.name.split()[2] == 'ALL'
             else section.name
             for section in self.course.get_sections()
         }
