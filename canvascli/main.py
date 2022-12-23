@@ -1045,7 +1045,9 @@ class FscGrades(CanvasConnection):
                 '\n        font-size: 12px;'
                 '\n        position: absolute;'
                 '\n        opacity: 0.75;'
-                '\n        left: 42px;'
+                # This could be more left when there are only two digits in the y-axis,
+                # but then it looks weird with three digits
+                '\n        left: 52px;'
                 '\n        top: 65px;'
                 '\n    }'
                 # Space between dropdowns
