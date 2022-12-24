@@ -756,7 +756,9 @@ class FscGrades(CanvasConnection):
                 facet=alt.Facet('Assignment', title='', sort=assignment_order, header=alt.Header(labelPadding=0)),
                 columns=1
             ).resolve_scale(
-                y='independent'  # Don't use the same y-axis ticks for each faceted boxplot
+                y='independent' if self.group_by == 'Grader' else 'shared'
+            ).resolve_axis(
+                x='independent'
             )
 
             self.assignment_distributions = alt.hconcat(
