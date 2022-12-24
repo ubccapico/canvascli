@@ -687,12 +687,15 @@ class FscGrades(CanvasConnection):
         ).facet(
             title=alt.TitleParams(
                 'Assignment Score Distributions',
-                subtitle=['Hover over the points to see the exact mean and median score.'],
+                subtitle=[
+                    'Hover over the box to view exact summary statistics.',
+                    'The "--filter-assignment" option controls what is shown here.'
+                ],
                 anchor='start',
                 dx=35,
                 dy=-5
             ),
-            facet=alt.Facet('Assignment', title='', sort=assignment_order, header=alt.Header(labelPadding=-5)),
+            facet=alt.Facet('Assignment', title='', sort=assignment_order, header=alt.Header(labelPadding=0)),
             columns=1
         ).resolve_axis(
             x='independent'
@@ -709,11 +712,14 @@ class FscGrades(CanvasConnection):
             ).facet(
                 title=alt.TitleParams(
                     f'Comparison Between {self.group_by}s',
-                    subtitle=[f'Hover over the box for detailed {self.group_by.lower()}s info.'],
+                    subtitle=[
+                        'Hover over the box to view exact summary statistics.',
+                        'The "--group-by" option controls what is shown here.'
+                    ],
                     anchor='start',
                     dy=-5
                 ),
-                facet=alt.Facet('Assignment', title='', sort=assignment_order, header=alt.Header(labelPadding=-5)),
+                facet=alt.Facet('Assignment', title='', sort=assignment_order, header=alt.Header(labelPadding=0)),
                 columns=1
             ).resolve_scale(
                 y='independent'  # Don't use the same y-axis ticks for each faceted boxplot
@@ -722,7 +728,7 @@ class FscGrades(CanvasConnection):
             self.assignment_distributions = alt.hconcat(
                 histograms,
                 boxplots,
-                spacing=80
+                spacing=100
             ).resolve_scale(
                 color='independent'  # Don't use the mean/median color range for the boxplot
             )
