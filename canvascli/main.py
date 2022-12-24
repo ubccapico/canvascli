@@ -960,34 +960,42 @@ class FscGrades(CanvasConnection):
             self.hover
         )
 
-        # Compare sections if there are more than one
-        if self.fsc_grades_for_viz['Section'].nunique() > 1:
+        # This is set regardless of how many sections there are since it would be used if group-by is 'Grader' as well
+        self.colorscheme_groups = [
+        # Tableau without the first blue
+        # since I already use that for all sections togethter
+             '#f58518',
+             '#e45756',
+             '#72b7b2',
+             '#54a24b',
+             '#eeca3b',
+             '#b279a2',
+             '#ff9da6',
+             '#9d755d',
+             '#bab0ac'
+        ]
+
+        # In case "Section" is explicitly passed to group-by
+        # although there is only one section
+        self.section_order = (
+            self.fsc_grades_for_viz
+            .query('`Percent Type` == "Exact Percent" & `Grade Status` == "Unposted Grade"')
+            .groupby('Section')
+            ['Percent Grade']
+            .median()
+            .sort_values()
+            .index.tolist()
+        )
+        # Compare sections if there are more than one (or explicitily specified)
+        if self.group_by is None:
+            if self.fsc_grades_for_viz['Section'].nunique() > 1:
+                self.group_by = 'Section'
+        if self.group_by == 'Section':
             title_sections = alt.TitleParams(
                 text=['', 'Comparison Between Sections'],
                 anchor='start'
             )
-            colorscheme_sections = [
-            # Tableau without the first blue
-            # since I already use that for all sections togethter
-                 '#f58518',
-                 '#e45756',
-                 '#72b7b2',
-                 '#54a24b',
-                 '#eeca3b',
-                 '#b279a2',
-                 '#ff9da6',
-                 '#9d755d',
-                 '#bab0ac'
-            ]
 
-            self.section_order = (
-                self.fsc_grades_for_viz
-                .groupby('Section')
-                ['Percent Grade']
-                .median()
-                .sort_values()
-                .index.tolist()
-            )
             box_base_sections = alt.Chart(
                 self.fsc_grades_for_viz,
                 title=title_sections
@@ -1001,16 +1009,21 @@ class FscGrades(CanvasConnection):
                 ),
                 alt.Color(
                     'Section:N',
-                    sort=self.section_order,
+                    sort=self.section_order[::-1],  # Reverse so that the highest value closest to the axis gets the most important color
                     legend=None,
-                    scale=alt.Scale(range=colorscheme_sections)
+                    scale=alt.Scale(range=self.colorscheme_groups)
                 )
             )
             self.box_sections = alt.layer(
                 box_base_sections,
                 box_base_sections.mark_point(size=25, shape='diamond', filled=True).encode(
                     alt.X('mean(Percent Grade)', scale=alt.Scale(zero=False)),
-                    alt.Y(f'{self.group_by}:N', sort=self.section_order, title='', axis=alt.Axis(orient='right', domain=False)),
+                    alt.Y(
+                        'Section:N',
+                        sort=self.section_order,
+                        title='',
+                        axis=alt.Axis(orient='right', domain=False)
+                    ),
                     color=alt.value('#353535')
                 ),
                 # Transparent tooltip box
@@ -1022,7 +1035,7 @@ class FscGrades(CanvasConnection):
                     q1="q1(Percent Grade)",
                     q3="q3(Percent Grade)",
                     count="count()",
-                    groupby=[f'{self.group_by}']
+                    groupby=['Section']
                 ).mark_bar(opacity=0).encode(
                     x='q1:Q',
                     x2='q3:Q',
@@ -1054,8 +1067,7 @@ class FscGrades(CanvasConnection):
                 alt.vconcat(
                     self.hist,
                     self.strip.add_selection(self.hover).interactive() + self.strip_overlay,
-                    self.box,
-                    self.box_sections,
+                    self.box & self.box_sections if hasattr(self, 'box_sections') else self.box,
                     spacing=0
                 ).properties(
                     title=title
@@ -1067,7 +1079,7 @@ class FscGrades(CanvasConnection):
                     self.percent_type_selection, self.grade_status_selection
                 ),
                 self.assignment_scores,
-                spacing=40
+                spacing=50
             ),
             self.assignment_distributions,
             spacing=40
