@@ -702,13 +702,47 @@ class FscGrades(CanvasConnection):
         )
 
         if self.group_by is not None:
-            boxplots = alt.Chart(
+            boxplot_base = alt.Chart(
                 assignment_score_df.reset_index(),
-                height=height + 2,
-            ).mark_boxplot(median={'color': 'black'}).encode(
-                x=alt.X('Score', scale=alt.Scale(zero=False)),
-                y=alt.Y(f'{self.group_by}:N', sort=group_order, title='', axis=alt.Axis(orient='right')),
-                color=alt.Color(f'{self.group_by}:N', sort=group_order, legend=None)
+                height=height + 20 + 2,
+            ).mark_boxplot(median={'color': 'black'}).encode(  # TODO increase thickness and switch from black in new altair version
+                alt.X('Score', scale=alt.Scale(zero=False)),
+                alt.Y(
+                    f'{self.group_by}:N',
+                    sort=self.group_order,
+                    title='',
+                    axis=alt.Axis(orient='right', domain=False)
+                ),
+                alt.Color(
+                    f'{self.group_by}:N',
+                    sort=self.group_order[::-1],  # Reverse so that the highest value closest to the axis gets the most important color
+                    legend=None,
+                    scale=alt.Scale(range=self.colorscheme_groups)
+                )
+            )
+            boxplots = alt.layer(
+                boxplot_base,
+                boxplot_base.mark_point(size=30, shape='diamond', filled=True).encode(
+                    alt.X('mean(Score)', scale=alt.Scale(zero=False)),
+                    color=alt.value('#353535')
+                ),
+                boxplot_base.transform_aggregate(
+                    min="min(Score)",
+                    max="max(Score)",
+                    mean="mean(Score)",
+                    median="median(Score)",
+                    q1="q1(Score)",
+                    q3="q3(Score)",
+                    count="count()",
+                    groupby=[f'{self.group_by}']
+                ).mark_bar(opacity=0).encode(
+                    x='q1:Q',
+                    x2='q3:Q',
+                    tooltip=alt.Tooltip(
+                        ['min:Q', 'q1:Q', 'mean:Q', 'median:Q', 'q3:Q', 'max:Q', 'count:Q'],
+                        format='.1f'
+                    )
+                )
             ).facet(
                 title=alt.TitleParams(
                     f'Comparison Between {self.group_by}s',
