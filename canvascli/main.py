@@ -862,19 +862,20 @@ class FscGrades(CanvasConnection):
             options=['Posted Grade', 'Unposted Grade'],
             name=' '
         )
-        self.grade_status_selection = alt.selection_single(
+        self.grade_status_selection = alt.selection_point(
             fields=['Grade Status'],
             bind=grade_status_dropdown,
-            init={'Grade Status': 'Unposted Grade'}
+            value=[{'Grade Status': 'Unposted Grade'}]
         )
         percent_type_dropdown = alt.binding_select(
             options=['FSC Rounded', 'Exact Percent'],
             name=' '
         )
-        self.percent_type_selection = alt.selection_single(
+        self.percent_type_selection = alt.selection_point(
             fields=['Percent Type'],
             bind=percent_type_dropdown,
-            init={'Percent Type': 'Exact Percent'}
+            value=[{'Percent Type': 'Exact Percent'}]
+        )
         )
 
         # Plot distribution
@@ -951,8 +952,8 @@ class FscGrades(CanvasConnection):
             alt.Tooltip(['Name:N', 'Student Number', 'Percent Grade']),
         )
 
-        self.hover = alt.selection_single(
-            fields=['User ID'], on='mouseover', nearest=True, empty='none'
+        self.hover = alt.selection_point(
+            fields=['User ID'], on='mouseover', nearest=True, empty=False
         )
         self.strip_overlay = self.strip.mark_circle(size=80, opacity=1).encode(
             color=alt.value('maroon')
@@ -1065,7 +1066,10 @@ class FscGrades(CanvasConnection):
         alt.vconcat(
             alt.hconcat(
                 alt.vconcat(
-                    self.hist,
+                    self.hist.add_selection(
+                        self.percent_type_selection,
+                        self.grade_status_selection,
+                    ),
                     self.strip.add_selection(self.hover).interactive() + self.strip_overlay,
                     self.box & self.box_sections if hasattr(self, 'box_sections') else self.box,
                     spacing=0
@@ -1075,8 +1079,6 @@ class FscGrades(CanvasConnection):
                     x='shared'
                 ).transform_filter(
                     self.percent_type_selection & self.grade_status_selection
-                ).add_selection(
-                    self.percent_type_selection, self.grade_status_selection
                 ),
                 self.assignment_scores,
                 spacing=50
