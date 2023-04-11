@@ -856,9 +856,16 @@ class FscGrades(CanvasConnection):
                     'Unposted Percent Grade': 'FSC Rounded',
                     'Unposted Exact Percent Grade': 'Exact Percent'
                 }
+            ).assign(
+                # Computing the percentile based score on the rounded percent and with the "max" method
+                # is more lenient/beneficial for students
+                # since they get the max percentile value of everyone with the same score.
+                # This also seems more fair since the FSC rounded percentage
+                # is their actual final grade in the course.
+                Percentile=lambda df: df['FSC Rounded'].rank(pct=True, method='max').round(2) * 100
             # Combine the rounded and raw *unposted* scores
             ).melt(
-                id_vars=['Preferred Name', 'Surname', 'Student Number', 'User ID', 'Section'],
+                id_vars=['Preferred Name', 'Surname', 'Student Number', 'User ID', 'Section', 'Percentile'],
                 value_vars=['FSC Rounded', 'Exact Percent'],
                 value_name='Unposted Grade',
                 var_name='Percent Type'
@@ -878,7 +885,7 @@ class FscGrades(CanvasConnection):
             )
         # Combine the posted and unposted scores
         ).melt(
-            id_vars=['Preferred Name', 'Surname', 'Student Number', 'User ID', 'Percent Type', 'Section'],
+            id_vars=['Preferred Name', 'Surname', 'Student Number', 'User ID', 'Percent Type', 'Section', 'Percentile'],
             value_vars=['Unposted Grade', 'Posted Grade'],
             value_name='Percent Grade',
             var_name='Grade Status'
@@ -983,7 +990,7 @@ class FscGrades(CanvasConnection):
                     grid=False
                 )
             ),
-            alt.Tooltip(['Name:N', 'Student Number', 'Percent Grade']),
+            alt.Tooltip(['Name:N', 'Student Number', 'Percent Grade', 'Percentile']),
         )
 
         self.hover = alt.selection_point(
