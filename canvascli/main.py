@@ -130,11 +130,12 @@ def cli():
               ' Useful for only removing test students. Default: True')
 @click.option('--open-chart', default=None, type=bool, help='Whether to open'
               ' the grade distribution chart automatically.'
-              ' Default: Ask at the end')
-@click.option('--filter-assignments', default='.*', type=str, help='Regex to filter'
+              ' Default: Ask unless specified')
+@click.option('--filter-assignments', default=None, type=str, help='Regex to filter'
               ' which assignments are included in the assignment-specific visualizations'
               ' (case-sensitive). Does not affect the calculation or visualization'
-              ' of the final grades. Default: All (.*)')
+              ' of the final grades. The special string "False" excludes all assignments. '
+              'Default: Ask unless specified')
 @click.option('--group-by', default=None, type=click.Choice(['Section', 'Grader']),
               help='Variable to group the visualizations by. A separate box plot'
               ' will be created for each group. Default: None (`Section` if there'
@@ -543,182 +544,134 @@ class FscGrades(CanvasConnection):
         return
 
     def plot_assignment_scores(self):
-        assignment_regex = re.compile(self.filter_assignments)
-        assignments = [
-            a for a in self.course.get_assignments()
-            if a.published
-              and a.points_possible is not None
-              and a.points_possible > 0
-              and assignment_regex.search(a.name)
-        ]
+        # Prompt the user if they want to show assignments,
+        # since it takes time to download them and makes the chart more noisy
+        # Only show if `filter_assignments` is not already set to a string,
+        # which indicates that the user already knows they want to include assignments
+        if self.filter_assignments == 'False' or (
+            not isinstance(self.filter_assignments, str)
+            and not click.confirm('Download and plot assignment scores?', default=True)
+        ):
+            # Adding empty charts since there are concated charts later
+            # that rely on the existence of these charts
+            self.assignment_distributions = alt.Chart().mark_point(opacity=0)
+            self.assignment_scores = alt.Chart().mark_point(opacity=0)
+        else:
+            # If we get here it means that the user has selected "Yes" in the prompt,
+            # but not specified a string, so include all assignments
+            if self.filter_assignments is None:
+                self.filter_assignments = ''
+            assignment_regex = re.compile(self.filter_assignments)
+            assignments = [
+                a for a in self.course.get_assignments()
+                if a.published
+                  and a.points_possible is not None
+                  and a.points_possible > 0
+                  and assignment_regex.search(a.name)
+            ]
 
-        assert assignments, (
-            'No assignment names matched'
-            f' the provided regular expression "{self.filter_assignments}"'
-        )
-        assignment_scores_dfs = []
-        click.echo("Downloading assignment scores...")
-        assignment_progress_bar = tqdm(assignments)
-        for assignment in assignment_progress_bar:
-            assignment_progress_bar.set_description(assignment.name)
-            submissions = assignment.get_submissions()
-            assignment_scores = defaultdict(list)
-            for submission in submissions:
-                assignment_scores['User ID'].append(submission.user_id)
-                assignment_scores['Grader ID'].append(submission.grader_id)
-                assignment_scores['Score'].append(
-                    100 * submission.score / assignment.points_possible
-                    if submission.score is not None else None
+            # Raise error so that it is clear to the user what happens
+            # when the regex does not match any assignments
+            if not assignments:
+                raise click.ClickException(
+                    click.style(
+                        'No assignment names matched the provided regular expression: '
+                        f'"{self.filter_assignments}". Aborting...',
+                        bold=True,
+                        fg='red'
+                    )
                 )
-                assignment_scores['Assignment'].append(assignment.name)
-            assignment_scores_dfs.append(pd.DataFrame(assignment_scores))
-        # fillna required on pandas >=1.4.0 due to https://github.com/pandas-dev/pandas/issues/46922
-        assignment_score_df = pd.concat(assignment_scores_dfs, ignore_index=True).fillna(np.nan)
-        # Sometime a negative number is returned for the grader,
-        # which does not make sense, maybe from gradescope?
-        assignment_score_df.loc[assignment_score_df['Grader ID'] < 0, 'Grader ID']  = pd.NA
 
-        user_ids_and_names = {
-            user.id: [user.name, user.sis_user_id]
-            for user in self.course.get_users()
-        }
-        user_ids_and_names_df = pd.DataFrame.from_dict(
-            user_ids_and_names, orient='index', columns=['Name', 'Student Number']
-        )
-        assignment_score_df['Grader'] = assignment_score_df['Grader ID'].map(
-            user_ids_and_names_df['Name']
-        )
-        assignment_score_df['Name'] = assignment_score_df['User ID'].map(
-            user_ids_and_names_df['Name']
-        )
-        assignment_score_df['Student Number'] = assignment_score_df['User ID'].map(
-            user_ids_and_names_df['Student Number']
-        )
-        # The section number cannot be extracted via `get_users()`
-        assignment_score_df['Section'] = (
-            assignment_score_df['User ID'].map(
-                self.canvas_grades.set_index('User ID')['Section']
+            assignment_scores_dfs = []
+            click.echo("Downloading assignment scores...")
+            assignment_progress_bar = tqdm(assignments)
+            for assignment in assignment_progress_bar:
+                assignment_progress_bar.set_description(assignment.name)
+                submissions = assignment.get_submissions()
+                assignment_scores = defaultdict(list)
+                for submission in submissions:
+                    assignment_scores['User ID'].append(submission.user_id)
+                    assignment_scores['Grader ID'].append(submission.grader_id)
+                    assignment_scores['Score'].append(
+                        100 * submission.score / assignment.points_possible
+                        if submission.score is not None else None
+                    )
+                    assignment_scores['Assignment'].append(assignment.name)
+                assignment_scores_dfs.append(pd.DataFrame(assignment_scores))
+            # fillna required on pandas >=1.4.0 due to https://github.com/pandas-dev/pandas/issues/46922
+            assignment_score_df = pd.concat(assignment_scores_dfs, ignore_index=True).fillna(np.nan)
+            # Sometime a negative number is returned for the grader,
+            # which does not make sense, maybe from gradescope?
+            assignment_score_df.loc[assignment_score_df['Grader ID'] < 0, 'Grader ID']  = pd.NA
+            user_ids_and_names = {
+                user.id: [user.name, user.id]
+                for user in self.course.get_users()
+            }
+            user_ids_and_names_df = pd.DataFrame.from_dict(
+                user_ids_and_names, orient='index', columns=['Name', 'Student Number']
             )
-        )
-
-        # Using `round` instead of `Decimal` here
-        # since the latter can't deal with a df with a single `None`
-        # and because this is just to show on the assignment scores,
-        # so it does not have to be fairly rounded like the final FSC grades.
-        assignment_score_df['Score'] = assignment_score_df['Score'].round(2)
-        # self.canvas has had dropped students removed at this point
-        # so we can use it to drop from the assignment score as well
-        assignment_score_df = assignment_score_df.query(
-            '`User ID` in @self.canvas_grades["User ID"]'
-        ).copy()
-
-        # Plot scores for individual assignments
-        # Start by figuring out how many groups there are to set chart height
-        # and in what order to sort
-        if self.group_by is None:
-            if assignment_score_df['Section'].nunique() > 1:
-                self.group_by = 'Section'
-            elif assignment_score_df['Grader'].nunique() > 1:
-                self.group_by = 'Grader'
-        height = 80
-        # If group_by is set either manually or automatically above
-        if self.group_by is not None:
-            if self.group_by == 'Section':
-                self.group_order = self.section_order
-            elif self.group_by == 'Grader':
-                self.group_order = (
-                    assignment_score_df
-                    .groupby(self.group_by)
-                    ['Score']
-                    .median()
-                    .sort_values()
-                    .index.tolist()
-                )
-            # Min height=80 for histograms to look nice
-            # 20 is the default step size for categorical scale
-            height = max(height, len(self.group_order) * 20)
-
-        # assignment_order is only needed because VL does not support maintaining
-        # the orignal order for facets https://github.com/vega/vega-lite/issues/6221
-        assignment_order = assignment_score_df['Assignment'].unique().tolist()
-
-        boxplot_base = alt.Chart(
-            assignment_score_df
-        ).mark_boxplot(median={'color': 'black'}).encode(
-            alt.X('Score', scale=alt.Scale(zero=False)),
-            y=alt.value(height + 10),
-        )
-        boxplots = alt.layer(
-            boxplot_base,
-            boxplot_base.mark_point(size=30, shape='diamond', filled=True).encode(
-                alt.X('mean(Score)', scale=alt.Scale(zero=False)),
-                color=alt.value('#353535')
-            ),
-            boxplot_base.transform_aggregate(
-                min="min(Score)",
-                max="max(Score)",
-                mean="mean(Score)",
-                median="median(Score)",
-                q1="q1(Score)",
-                q3="q3(Score)",
-                count="count()",
-            # Without setting the height here the tooltip region is too narrow,
-            # and the height of the boxplot chart does not matter as it does for the overall grades boxplot,
-            # not sure why it's different.
-            ).mark_bar(opacity=0, height=20).encode(
-                x='q1:Q',
-                x2='q3:Q',
-                tooltip=alt.Tooltip(
-                    ['min:Q', 'q1:Q', 'mean:Q', 'median:Q', 'q3:Q', 'max:Q', 'count:Q'],
-                    format='.1f'
+            assignment_score_df['Grader'] = assignment_score_df['Grader ID'].map(
+                user_ids_and_names_df['Name']
+            )
+            assignment_score_df['Name'] = assignment_score_df['User ID'].map(
+                user_ids_and_names_df['Name']
+            )
+            assignment_score_df['Student Number'] = assignment_score_df['User ID'].map(
+                user_ids_and_names_df['Student Number']
+            )
+            # The section number cannot be extracted via `get_users()`
+            assignment_score_df['Section'] = (
+                assignment_score_df['User ID'].map(
+                    self.canvas_grades.set_index('User ID')['Section']
                 )
             )
-        )
 
-        histograms = alt.layer(
-            alt.Chart(
-                assignment_score_df,
-                height=height,
-            ).mark_bar().encode(
-                x=alt.X('Score', bin=alt.Bin(step=5), axis=alt.Axis(offset=20)),
-                y=alt.Y('count()', title='Student Count'),
-            ),
-            boxplots,
-        ).facet(
-            title=alt.TitleParams(
-                'Assignment Score Distributions',
-                subtitle=[
-                    'Hover over the box to view exact summary statistics.',
-                    'The "--filter-assignment" option controls what is shown here.'
-                ],
-                anchor='start',
-                dx=35,
-                dy=-5
-            ),
-            facet=alt.Facet('Assignment', title='', sort=assignment_order, header=alt.Header(labelPadding=0)),
-            columns=1
-        ).resolve_axis(
-            x='independent'
-        )
+            # Using `round` instead of `Decimal` here
+            # since the latter can't deal with a df with a single `None`
+            # and because this is just to show on the assignment scores,
+            # so it does not have to be fairly rounded like the final FSC grades.
+            assignment_score_df['Score'] = assignment_score_df['Score'].round(2)
+            # self.canvas has had dropped students removed at this point
+            # so we can use it to drop from the assignment score as well
+            assignment_score_df = assignment_score_df.query(
+                '`User ID` in @self.canvas_grades["User ID"]'
+            ).copy()
 
-        if self.group_by is not None:
+            # Plot scores for individual assignments
+            # Start by figuring out how many groups there are to set chart height
+            # and in what order to sort
+            if self.group_by is None:
+                if assignment_score_df['Section'].nunique() > 1:
+                    self.group_by = 'Section'
+                elif assignment_score_df['Grader'].nunique() > 1:
+                    self.group_by = 'Grader'
+            height = 80
+            # If group_by is set either manually or automatically above
+            if self.group_by is not None:
+                if self.group_by == 'Section':
+                    self.group_order = self.section_order
+                elif self.group_by == 'Grader':
+                    self.group_order = (
+                        assignment_score_df
+                        .groupby(self.group_by)
+                        ['Score']
+                        .median()
+                        .sort_values()
+                        .index.tolist()
+                    )
+                # Min height=80 for histograms to look nice
+                # 20 is the default step size for categorical scale
+                height = max(height, len(self.group_order) * 20)
+
+            # assignment_order is only needed because VL does not support maintaining
+            # the orignal order for facets https://github.com/vega/vega-lite/issues/6221
+            assignment_order = assignment_score_df['Assignment'].unique().tolist()
+
             boxplot_base = alt.Chart(
-                assignment_score_df.reset_index(),
-                height=height + 20 + 2,
-            ).mark_boxplot(median={'color': 'black'}).encode(  # TODO increase thickness and switch from black in new altair version
+                assignment_score_df
+            ).mark_boxplot(median={'color': 'black'}).encode(
                 alt.X('Score', scale=alt.Scale(zero=False)),
-                alt.Y(
-                    f'{self.group_by}:N',
-                    sort=self.group_order,
-                    title='',
-                    axis=alt.Axis(orient='right', domain=False)
-                ),
-                alt.Color(
-                    f'{self.group_by}:N',
-                    sort=self.group_order[::-1],  # Reverse so that the highest value closest to the axis gets the most important color
-                    legend=None,
-                    scale=alt.Scale(range=self.colorscheme_groups)
-                )
+                y=alt.value(height + 10),
             )
             boxplots = alt.layer(
                 boxplot_base,
@@ -734,8 +687,10 @@ class FscGrades(CanvasConnection):
                     q1="q1(Score)",
                     q3="q3(Score)",
                     count="count()",
-                    groupby=[f'{self.group_by}']
-                ).mark_bar(opacity=0).encode(
+                # Without setting the height here the tooltip region is too narrow,
+                # and the height of the boxplot chart does not matter as it does for the overall grades boxplot,
+                # not sure why it's different.
+                ).mark_bar(opacity=0, height=20).encode(
                     x='q1:Q',
                     x2='q3:Q',
                     tooltip=alt.Tooltip(
@@ -743,82 +698,152 @@ class FscGrades(CanvasConnection):
                         format='.1f'
                     )
                 )
+            )
+
+            histograms = alt.layer(
+                alt.Chart(
+                    assignment_score_df,
+                    height=height,
+                ).mark_bar().encode(
+                    x=alt.X('Score', bin=alt.Bin(step=5), axis=alt.Axis(offset=20)),
+                    y=alt.Y('count()', title='Student Count'),
+                ),
+                boxplots,
             ).facet(
                 title=alt.TitleParams(
-                    f'Comparison Between {self.group_by}s',
+                    'Assignment Score Distributions',
                     subtitle=[
                         'Hover over the box to view exact summary statistics.',
-                        'The "--group-by" option controls what is shown here.'
+                        'The "--filter-assignment" option controls what is shown here.'
                     ],
                     anchor='start',
+                    dx=35,
                     dy=-5
                 ),
                 facet=alt.Facet('Assignment', title='', sort=assignment_order, header=alt.Header(labelPadding=0)),
                 columns=1
-            ).resolve_scale(
-                y='independent' if self.group_by == 'Grader' else 'shared'
             ).resolve_axis(
                 x='independent'
             )
 
-            self.assignment_distributions = alt.hconcat(
-                histograms,
-                boxplots,
-                spacing=100
-            ).resolve_scale(
-                color='independent'  # Don't use the mean/median color range for the boxplot
-            )
-        else:
-            self.assignment_distributions = histograms
+            if self.group_by is not None:
+                boxplot_base = alt.Chart(
+                    assignment_score_df.reset_index(),
+                    height=height + 20 + 2,
+                ).mark_boxplot(median={'color': 'black'}).encode(  # TODO increase thickness and switch from black in new altair version
+                    alt.X('Score', scale=alt.Scale(zero=False)),
+                    alt.Y(
+                        f'{self.group_by}:N',
+                        sort=self.group_order,
+                        title='',
+                        axis=alt.Axis(orient='right', domain=False)
+                    ),
+                    alt.Color(
+                        f'{self.group_by}:N',
+                        sort=self.group_order[::-1],  # Reverse so that the highest value closest to the axis gets the most important color
+                        legend=None,
+                        scale=alt.Scale(range=self.colorscheme_groups)
+                    )
+                )
+                boxplots = alt.layer(
+                    boxplot_base,
+                    boxplot_base.mark_point(size=30, shape='diamond', filled=True).encode(
+                        alt.X('mean(Score)', scale=alt.Scale(zero=False)),
+                        color=alt.value('#353535')
+                    ),
+                    boxplot_base.transform_aggregate(
+                        min="min(Score)",
+                        max="max(Score)",
+                        mean="mean(Score)",
+                        median="median(Score)",
+                        q1="q1(Score)",
+                        q3="q3(Score)",
+                        count="count()",
+                        groupby=[f'{self.group_by}']
+                    ).mark_bar(opacity=0).encode(
+                        x='q1:Q',
+                        x2='q3:Q',
+                        tooltip=alt.Tooltip(
+                            ['min:Q', 'q1:Q', 'mean:Q', 'median:Q', 'q3:Q', 'max:Q', 'count:Q'],
+                            format='.1f'
+                        )
+                    )
+                ).facet(
+                    title=alt.TitleParams(
+                        f'Comparison Between {self.group_by}s',
+                        subtitle=[
+                            'Hover over the box to view exact summary statistics.',
+                            'The "--group-by" option controls what is shown here.'
+                        ],
+                        anchor='start',
+                        dy=-5
+                    ),
+                    facet=alt.Facet('Assignment', title='', sort=assignment_order, header=alt.Header(labelPadding=0)),
+                    columns=1
+                ).resolve_scale(
+                    y='independent' if self.group_by == 'Grader' else 'shared'
+                ).resolve_axis(
+                    x='independent'
+                )
 
-        # Plot assignment scores
-        assignment_score_df['Assignment scores stdev'] = assignment_score_df['User ID'].map(
-            assignment_score_df.groupby('User ID')['Score'].std()
-        )
-        base = alt.Chart(
-                assignment_score_df,
-                title=alt.TitleParams(
-                    'Student Assignment Scores',
-                    subtitle=[
-                        'Hover near a point to highlight a line.',
-                        'Hover directly over a point to view student info.',
-                        'Click the "..." button to the right to save this page as PNG/SVG.',
-                    ],
-                    anchor='start',
-                    dx=40
-                ),
-            ).mark_point(opacity=0).encode(
-            y=alt.Y('Score', scale=alt.Scale(zero=False), title='Assignment Score (%)'),
-            detail='User ID',
-            x=alt.X('Assignment', title='', sort=assignment_order),
-            # Having the tooltip here instead of in the transformed chart
-            # makes it work with nearest,
-            # but significantly slows down the higlighting of the line
-            # tooltip=['Name', 'Student Number', 'Score'],
-        ).transform_filter(
-            alt.expr.test(alt.expr.regexp(self.search_input, 'i'), alt.datum.Name)
-        )
-        width = min(1000, max(400, 80 * assignment_score_df['Assignment'].nunique()))
-        self.assignment_scores = (
-            base.add_selection(
-                self.hover
-            ) + base.mark_line(opacity=0.5, interpolate='monotone').encode(
-                color=alt.Color(
-                    'Assignment scores stdev',
-                    scale=alt.Scale(scheme='cividis', reverse=True),
-                    title=['Stdev between', 'Assignments']
+                self.assignment_distributions = alt.hconcat(
+                    histograms,
+                    boxplots,
+                    spacing=100
+                ).resolve_scale(
+                    color='independent'  # Don't use the mean/median color range for the boxplot
                 )
-            ) + (base.mark_line(size=3, interpolate='monotone', color='maroon')
-            + base.mark_circle(size=70, color='maroon', opacity=1).encode(
+            else:
+                self.assignment_distributions = histograms
+
+            # Plot assignment scores
+            assignment_score_df['Assignment scores stdev'] = assignment_score_df['User ID'].map(
+                assignment_score_df.groupby('User ID')['Score'].std()
+            )
+            base = alt.Chart(
+                    assignment_score_df,
+                    title=alt.TitleParams(
+                        'Student Assignment Scores',
+                        subtitle=[
+                            'Hover near a point to highlight a line.',
+                            'Hover directly over a point to view student info.',
+                            'Click the "..." button to the right to save this page as PNG/SVG.',
+                        ],
+                        anchor='start',
+                        dx=40
+                    ),
+                ).mark_point(opacity=0).encode(
+                y=alt.Y('Score', scale=alt.Scale(zero=False), title='Assignment Score (%)'),
+                detail='User ID',
+                x=alt.X('Assignment', title='', sort=assignment_order),
+                # Having the tooltip here instead of in the transformed chart
+                # makes it work with nearest,
+                # but significantly slows down the higlighting of the line
                 tooltip=['Name', 'Student Number', 'Score'],
-                )
             ).transform_filter(
-                self.hover
-            )).properties(
-                width=width,
-                height=280,
-            ).interactive()
-        return
+                alt.expr.test(alt.expr.regexp(self.search_input, 'i'), alt.datum.Name)
+            )
+            width = min(1000, max(400, 80 * assignment_score_df['Assignment'].nunique()))
+            self.assignment_scores = (
+                base.add_selection(
+                    self.hover
+                ) + base.mark_line(opacity=0.5, interpolate='monotone').encode(
+                    color=alt.Color(
+                        'Assignment scores stdev',
+                        scale=alt.Scale(scheme='cividis', reverse=True),
+                        title=['Stdev between', 'Assignments']
+                    )
+                ) + (base.mark_line(size=3, interpolate='monotone', color='maroon')
+                + base.mark_circle(size=70, color='maroon', opacity=1).encode(
+                    # tooltip=['Name', 'Student Number', 'Score'],
+                    )
+                ).transform_filter(
+                    self.hover
+                )).properties(
+                    width=width,
+                    height=280,
+                ).interactive()
+            return
 
     def plot_fsc_grade_distribution(self):
         # Prepare dataframe for filtering via Altair selection elements
