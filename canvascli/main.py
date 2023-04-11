@@ -588,7 +588,7 @@ class FscGrades(CanvasConnection):
         assignment_score_df['Grader'] = assignment_score_df['Grader ID'].map(
             user_ids_and_names_df['Name']
         )
-        assignment_score_df['Student'] = assignment_score_df['User ID'].map(
+        assignment_score_df['Name'] = assignment_score_df['User ID'].map(
             user_ids_and_names_df['Name']
         )
         assignment_score_df['Student Number'] = assignment_score_df['User ID'].map(
@@ -794,7 +794,9 @@ class FscGrades(CanvasConnection):
             # Having the tooltip here instead of in the transformed chart
             # makes it work with nearest,
             # but significantly slows down the higlighting of the line
-            # tooltip=['Student', 'Student Number', 'Score'],
+            # tooltip=['Name', 'Student Number', 'Score'],
+        ).transform_filter(
+            alt.expr.test(alt.expr.regexp(self.search_input, 'i'), alt.datum.Name)
         )
         width = min(1000, max(400, 80 * assignment_score_df['Assignment'].nunique()))
         self.assignment_scores = (
@@ -808,7 +810,7 @@ class FscGrades(CanvasConnection):
                 )
             ) + (base.mark_line(size=3, interpolate='monotone', color='maroon')
             + base.mark_circle(size=70, color='maroon', opacity=1).encode(
-                tooltip=['Student', 'Student Number', 'Score'],
+                tooltip=['Name', 'Student Number', 'Score'],
                 )
             ).transform_filter(
                 self.hover
@@ -876,6 +878,13 @@ class FscGrades(CanvasConnection):
             bind=percent_type_dropdown,
             value=[{'Percent Type': 'Exact Percent'}]
         )
+        self.search_input = alt.param(
+            value='',
+            bind=alt.binding(
+                input='search',
+                placeholder="Search student name",
+                name=' ',
+            )
         )
 
         # Plot distribution
@@ -953,7 +962,7 @@ class FscGrades(CanvasConnection):
         )
 
         self.hover = alt.selection_point(
-            fields=['User ID'], on='mouseover', nearest=True, empty=False
+            fields=['User ID'], on='mouseover', nearest=True, empty=False, clear='mouseout'
         )
         self.strip_overlay = self.strip.mark_circle(size=80, opacity=1).encode(
             color=alt.value('maroon')
@@ -1069,8 +1078,11 @@ class FscGrades(CanvasConnection):
                     self.hist.add_selection(
                         self.percent_type_selection,
                         self.grade_status_selection,
+                        self.search_input
                     ),
-                    self.strip.add_selection(self.hover).interactive() + self.strip_overlay,
+                    self.strip.add_selection(self.hover).transform_filter(
+                        alt.expr.test(alt.expr.regexp(self.search_input, 'i'), alt.datum.Name)
+                    ).interactive() + self.strip_overlay,
                     self.box & self.box_sections if hasattr(self, 'box_sections') else self.box,
                     spacing=0
                 ).properties(
