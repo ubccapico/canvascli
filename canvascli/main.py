@@ -801,18 +801,18 @@ class FscGrades(CanvasConnection):
                 assignment_score_df.groupby('User ID')['Score'].std()
             )
             base = alt.Chart(
-                    assignment_score_df,
-                    title=alt.Title(
-                        'Student Assignment Scores',
-                        subtitle=[
-                            'Hover near a point to highlight a line.',
-                            'Hover directly over a point to view student info.',
-                            'Click the "..." button to the right to save this page as PNG/SVG.',
-                        ],
-                        anchor='start',
-                        dx=40
-                    ),
-                ).mark_point(opacity=0).encode(
+                assignment_score_df,
+                title=alt.Title(
+                    'Student Assignment Scores',
+                    subtitle=[
+                        'Hover near a point to highlight a line.',
+                        'Hover directly over a point to view student info.',
+                        'Click the "..." button to the right to save this page as PNG/SVG.',
+                    ],
+                    anchor='start',
+                    dx=40
+                ),
+            ).mark_point(opacity=0).encode(
                 y=alt.Y('Score', scale=alt.Scale(zero=False), title='Assignment Score (%)'),
                 detail='User ID',
                 x=alt.X('Assignment', title='', sort=assignment_order),
