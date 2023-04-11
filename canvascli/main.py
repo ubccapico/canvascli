@@ -710,7 +710,7 @@ class FscGrades(CanvasConnection):
                 ),
                 boxplots,
             ).facet(
-                title=alt.TitleParams(
+                title=alt.Title(
                     'Assignment Score Distributions',
                     subtitle=[
                         'Hover over the box to view exact summary statistics.',
@@ -769,7 +769,7 @@ class FscGrades(CanvasConnection):
                         )
                     )
                 ).facet(
-                    title=alt.TitleParams(
+                    title=alt.Title(
                         f'Comparison Between {self.group_by}s',
                         subtitle=[
                             'Hover over the box to view exact summary statistics.',
@@ -802,7 +802,7 @@ class FscGrades(CanvasConnection):
             )
             base = alt.Chart(
                     assignment_score_df,
-                    title=alt.TitleParams(
+                    title=alt.Title(
                         'Student Assignment Scores',
                         subtitle=[
                             'Hover near a point to highlight a line.',
@@ -825,7 +825,7 @@ class FscGrades(CanvasConnection):
             )
             width = min(1000, max(400, 80 * assignment_score_df['Assignment'].nunique()))
             self.assignment_scores = (
-                base.add_selection(
+                base.add_params(
                     self.hover
                 ) + base.mark_line(opacity=0.5, interpolate='monotone').encode(
                     color=alt.Color(
@@ -1026,7 +1026,7 @@ class FscGrades(CanvasConnection):
             if self.fsc_grades_for_viz['Section'].nunique() > 1:
                 self.group_by = 'Section'
         if self.group_by == 'Section':
-            title_sections = alt.TitleParams(
+            title_sections = alt.Title(
                 text=['', 'Comparison Between Sections'],
                 anchor='start'
             )
@@ -1084,7 +1084,7 @@ class FscGrades(CanvasConnection):
 
     def layout_and_save_charts(self):
         # Add instructions
-        title = alt.TitleParams(
+        title = alt.Title(
             text=f'Final Grade Distribution {self.subject} {self.course_name}',
             subtitle=[
                 'Hover near a point to view student info.',
@@ -1100,12 +1100,12 @@ class FscGrades(CanvasConnection):
         alt.vconcat(
             alt.hconcat(
                 alt.vconcat(
-                    self.hist.add_selection(
+                    self.hist.add_params(
                         self.percent_type_selection,
                         self.grade_status_selection,
                         self.search_input
                     ),
-                    self.strip.add_selection(self.hover).transform_filter(
+                    self.strip.add_params(self.hover).transform_filter(
                         alt.expr.test(alt.expr.regexp(self.search_input, 'i'), alt.datum.Name)
                     ).interactive() + self.strip_overlay,
                     self.box & self.box_sections if hasattr(self, 'box_sections') else self.box,
