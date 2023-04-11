@@ -914,7 +914,7 @@ class FscGrades(CanvasConnection):
             value='',
             bind=alt.binding(
                 input='search',
-                placeholder="Search student name",
+                placeholder="Search name",
                 name=' ',
             )
         )
@@ -1097,6 +1097,8 @@ class FscGrades(CanvasConnection):
                 'Hover near a point to view student info.',
                 'Hover over the box to view exact summary statistics.',
                 'Changes in the dropdown menus below only affect this chart',
+                '',
+                ''
             ],
             anchor='start',
             dx=35
@@ -1145,14 +1147,15 @@ class FscGrades(CanvasConnection):
                 '\n        font-size: 12px;'
                 '\n        position: absolute;'
                 '\n        opacity: 0.75;'
+                '\n        display: flex;'
+                '\n        gap: 5px;'
                 # This could be more left when there are only two digits in the y-axis,
                 # but then it looks weird with three digits
-                '\n        left: 52px;'
+                '\n        left: 35px;'
                 '\n        top: 65px;'
                 '\n    }'
-                # Space between dropdowns
-                '\n    select {'
-                '\n        margin-block: 1px;'
+                '\n    input[type="search"] {'
+                '\n        width: 120px;'
                 '\n    }'
                 '\n</style>'
             )
