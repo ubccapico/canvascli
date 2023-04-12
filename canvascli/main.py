@@ -349,7 +349,12 @@ class FscGrades(CanvasConnection):
         canvas_grades = defaultdict(list)
         for enrollment in enrollments:
             canvas_grades['User ID'].append(enrollment.user['id'])
-            canvas_grades['Student Number'].append(enrollment.user['sis_user_id'])
+
+            if hasattr(enrollment.user, 'sis_user_id'):
+                canvas_grades['Student Number'].append(enrollment.user['sis_user_id'])
+            else:
+                # A warning about this case is emitted further down
+                canvas_grades['Student Number'].append('N/A')
             surname, preferred_name = enrollment.user['sortable_name'].split(', ')
             canvas_grades['Surname'].append(surname)
             canvas_grades['Preferred Name'].append(preferred_name)
@@ -372,6 +377,18 @@ class FscGrades(CanvasConnection):
                     canvas_grades['different_unposted_score'].append(False)
 
         self.canvas_grades = pd.DataFrame(canvas_grades)
+
+        # Warn about missing student numbers
+        if (pd.DataFrame(canvas_grades)['Student Number'] == 'N/A').any():
+            click.secho('\nWARNING', fg='red', bold=True)
+            click.echo(
+                'Could not find students numbers for at least one student.'
+                '\nThis does not impact the visualizations,'
+                '\nbut you must add student numbers manually'
+                '\nbefore uploading the CSV file to the FSC.'
+                '\nThis could happen because your course has concluded'
+                '\nor because it includes a test student account.\n'
+            )
 
         # Extract course section IDs here
         # We are relying on the same extraction pattern as for the FSC grades,
@@ -605,7 +622,7 @@ class FscGrades(CanvasConnection):
             # which does not make sense, maybe from gradescope?
             assignment_score_df.loc[assignment_score_df['Grader ID'] < 0, 'Grader ID']  = pd.NA
             user_ids_and_names = {
-                user.id: [user.name, user.id]
+                user.id: [user.name, user.sis_user_id if hasattr(user, 'sis_user_id') else 'N/A']
                 for user in self.course.get_users()
             }
             user_ids_and_names_df = pd.DataFrame.from_dict(
