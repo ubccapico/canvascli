@@ -975,13 +975,14 @@ class FscGrades(CanvasConnection):
                     domain=False
                 ),
                 scale=alt.Scale(
+                    padding=5,
                     zero=False,
                     nice=False,
                 )
             ),
             alt.Y(
                 'jitter:Q',
-                scale=alt.Scale(padding=2),
+                scale=alt.Scale(padding=5),
                 axis=alt.Axis(
                     domain=False,
                     title='',
