@@ -855,6 +855,11 @@ class FscGrades(CanvasConnection):
             at a random position within the bounds of the KDE at that location.
             """
 
+            # TODO include a scaling parameter so that few points renders a more compressed violin
+
+            # The KDE needs at least 3 unique points to be computed
+            if series.nunique() < 3:
+                return pd.Series([0] * series.shape[0])
             # NAs are not supported in SciPy's density calculation
             na_series = series[series.isna()]
             no_na_series = series.dropna()
