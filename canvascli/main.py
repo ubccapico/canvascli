@@ -20,6 +20,7 @@ from appdirs import user_data_dir
 from canvasapi import Canvas
 from canvasapi.exceptions import InvalidAccessToken, Unauthorized
 from luddite import get_version_pypi
+from scipy import stats
 from tqdm import tqdm
 # Using https://github.com/biqqles/dataclassy instead of dataclasses from
 # stdlibto allow for dataclass inheritance when there are default values. Could
@@ -846,6 +847,37 @@ class FscGrades(CanvasConnection):
             return
 
     def plot_fsc_grade_distribution(self):
+
+        def _compute_violin_cloud(series):
+            """Create a violin-shaped point cloud.
+
+            Compute the KDE and then place each point
+            at a random position within the bounds of the KDE at that location.
+            """
+
+            # NAs are not supported in SciPy's density calculation
+            na_series = series[series.isna()]
+            no_na_series = series.dropna()
+            no_na_sorted_series = no_na_series.sort_values()
+
+            # Compute the density function of the data
+            dens = stats.gaussian_kde(no_na_series)
+            # Compute the density value for each data point
+            pdf = dens(no_na_sorted_series)
+            # Normalize the y-range so that the aces domain can be set predictably
+            pdf = (pdf - pdf.min()) / (pdf.max() - pdf.min())
+
+            # Randomly jitter points within 0 and the upper bond of the probability density function
+            violin_cloud = np.empty(pdf.shape[0])
+            for i in range(pdf.shape[0]):
+                violin_cloud[i] = np.random.uniform(0, pdf[i])
+            # To create a symmetric density/violin, we make every second point negative
+            # Distributing every other point like this is also more likely to preserve the shape of the violin
+            violin_cloud[::2] = violin_cloud[::2] * -1
+            # Sorting by index makes it possible to merge with another df in the same order as the original one,
+            # even if the index labels might differ
+            return pd.concat([pd.Series(violin_cloud, index=no_na_sorted_series.index), na_series]).sort_index()
+
         # Prepare dataframe for filtering via Altair selection elements
         # First the rounded and raw scores are melted together separately for posted and unposted scores
         # Then they are merged into one frame and the posted and unposted score are melted together
@@ -889,7 +921,22 @@ class FscGrades(CanvasConnection):
             value_vars=['Unposted Grade', 'Posted Grade'],
             value_name='Percent Grade',
             var_name='Grade Status'
-        )
+        # This sorting of values is required to line up the points with the violin cloud below
+        ).sort_values(['User ID', 'Grade Status', 'Percent Type', 'Percent Grade'])
+
+        # This sorting of values and the index reset is required to line up the violin cloud with the df above
+        self.fsc_grades_for_viz['violin_cloud'] = self.fsc_grades.sort_values(
+            ['User ID', 'Percent Grade']
+        ).reset_index()[[
+            'Exact Percent Grade',
+            'Percent Grade',
+            'Unposted Exact Percent Grade',
+            'Unposted Percent Grade',
+        ]].apply(
+            _compute_violin_cloud
+        ).stack(
+            dropna=False
+        ).to_numpy()
 
         # Set up selection elements
         grade_status_dropdown = alt.binding_select(
@@ -962,8 +1009,6 @@ class FscGrades(CanvasConnection):
         self.strip = alt.Chart(self.fsc_grades_for_viz, height=70).mark_point(
             size=20
         ).transform_calculate(
-            # Generate Gaussian jitter with a Box-Muller transform
-            jitter='sqrt(-2*log(random()))*cos(2*PI*random())',
             Name='datum["Preferred Name"] + " " + datum["Surname"]'
         ).encode(
             alt.X(
@@ -981,7 +1026,7 @@ class FscGrades(CanvasConnection):
                 )
             ),
             alt.Y(
-                'jitter:Q',
+                'violin_cloud',
                 scale=alt.Scale(padding=5),
                 axis=alt.Axis(
                     domain=False,
