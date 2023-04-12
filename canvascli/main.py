@@ -342,12 +342,20 @@ class FscGrades(CanvasConnection):
 
     def get_canvas_grades(self):
         """Download grades from a canvas course."""
-        click.echo('Downloading student grades...')
         enrollments = self.course.get_enrollments(
             type=['StudentEnrollment'], state=[self.student_status]
         )
         canvas_grades = defaultdict(list)
-        for enrollment in enrollments:
+
+        # We can't know the length of `enrollments` since it is an iterable,
+        # so this is the best progress bar we can get here
+        enrollments_progress_bar = tqdm(
+            enrollments,
+            unit=' students',
+            desc='Downloading student grades',
+            bar_format='{desc}... {n}{unit}'
+        )
+        for enrollment in enrollments_progress_bar:
             canvas_grades['User ID'].append(enrollment.user['id'])
 
             if hasattr(enrollment.user, 'sis_user_id'):
