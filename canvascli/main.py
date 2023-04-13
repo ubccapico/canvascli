@@ -512,13 +512,17 @@ class FscGrades(CanvasConnection):
 
     def convert_grades_to_fsc_format(self):
         """Convert grades to FSC format."""
-        # Extract FSC info from canvas
+        self.campus = 'UBC'
         # LT hub mentioned that these fields should be safe to extract from the
         # canvas course code (for UBC courses in general), but there is an override
         # option just in case
-        # `_` is for `section` which is now extracted for each student above instead
-        self.campus = 'UBC'
-        self.subject, self.course_name, _, self.session = self.course.course_code.split()
+        # Some course codes include multiple sessions in the name,
+        # which is why we are doing this split in two steps and dropping everything
+        # from index 2 to -2 since the session is already extracted for each student elsewhere
+        subject_coursename_session = self.course.course_code.split()
+        self.subject, self.course_name = subject_coursename_session[:2]
+        self.session = subject_coursename_session[-1]
+
         if self.override_campus is not None:
             self.campus = self.override_campus
         if self.override_course is not None:
