@@ -1014,7 +1014,9 @@ class FscGrades(CanvasConnection):
         box_base = alt.Chart(
             self.fsc_grades_for_viz,
             height=20
-        ).mark_boxplot(outliers=False, median={'color': 'black'}).encode(
+        # The opacity setting makes sure that the scale is lined up with the hisotrgams
+        # while not showing outliers
+        ).mark_boxplot(outliers={'opacity': 0}, median={'color': 'black'}).encode(
             alt.X('Percent Grade', title='Final Percent Grade'),
             y=alt.value(10)
         )
@@ -1125,7 +1127,9 @@ class FscGrades(CanvasConnection):
             box_base_sections = alt.Chart(
                 self.fsc_grades_for_viz,
                 title=title_sections
-            ).mark_boxplot(outliers=False, median={'color': 'black'}).encode(
+            # The opacity setting makes sure that the scale is lined up with the hisotrgams
+            # while not showing outliers
+            ).mark_boxplot(outliers={'opacity': 0}, median={'color': 'black'}).encode(
                 alt.X('Percent Grade', title='Final Percent Grade'),
                 alt.Y(
                     'Section:N',
