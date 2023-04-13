@@ -398,16 +398,16 @@ class FscGrades(CanvasConnection):
                 '\nor because it includes a test student account.\n'
             )
 
-        # Extract course section IDs here
+        # Extract course section IDs for each students
         # We are relying on the same extraction pattern as for the FSC grades,
-        # which should be safe and also do an extra check ot return the entire name
-        # if the course section is not a number
-        # (there could still be an unlucky circumstance where [2] returns a number
-        # but it is not the course section, but that seems unlikely)
+        # which LT hub mentioned should be safe to extract from the
+        # canvas course code (for UBC courses in general).
+        # There is no override for the individual student 
+        # which should be safe.
+        # Originally there was a check to verify that the course section is a number
+        # but it turns out some courses don't use numbers for the sections
         section_ids_and_names = {
             section.id: section.name.split()[2]
-            if section.name.split()[2].isdigit() or section.name.split()[2] == 'ALL'
-            else section.name
             for section in self.course.get_sections()
         }
         self.canvas_grades['Section'] = (
