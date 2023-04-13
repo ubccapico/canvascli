@@ -531,6 +531,11 @@ class FscGrades(CanvasConnection):
             self.section = self.override_section
         if self.override_session is not None:
             self.session = self.override_session
+        else:
+            # Remove the session number suffix for the automatically extracted value
+            # since this only exists on Canvas but not FSC.
+            # Don't remove anything if a manual value is provided
+            self.session = self.session[:-1]
         if self.override_subject is not None:
             self.subject = self.override_subject
         # Add FSC info to the dataframe, standing and standing reason are
