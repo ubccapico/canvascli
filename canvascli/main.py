@@ -538,13 +538,12 @@ class FscGrades(CanvasConnection):
             self.session = self.session[:-1]
         if self.override_subject is not None:
             self.subject = self.override_subject
-        # Add FSC info to the dataframe, standing and standing reason are
+        # Add FSC info to the dataframe; standing and standing reason are
         # blank by default and filled out manually when needed
         self.fsc_grades = self.canvas_grades.copy()
-        additional_fsc_fields = ['Campus', 'Course', 'Session', 'Subject',
-                      'Standing', 'Standing Reason']
-        # Remove the session number which is only present on Canvas but not FSC
-        self.session = self.session[:-1]
+        additional_fsc_fields = [
+            'Campus', 'Course', 'Session', 'Subject','Standing', 'Standing Reason'
+        ]
         self.fsc_grades[additional_fsc_fields] = (
             self.campus, self.course_name, self.session, self.subject, '', '')
 
