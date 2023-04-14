@@ -790,12 +790,12 @@ class FscGrades(CanvasConnection):
                     assignment_score_df.reset_index(),
                     height=height + 20,
                 ).mark_boxplot(median={'color': 'black'}).encode(  # TODO increase thickness and switch from black in new altair version
-                    alt.X('Score', scale=alt.Scale(zero=False)),
+                    alt.X('Score', scale=alt.Scale(zero=False, domain=bin_extent)),
                     alt.Y(
                         f'{self.group_by}:N',
                         sort=self.group_order,
                         title='',
-                        axis=alt.Axis(orient='right', domain=False)
+                        axis=alt.Axis(orient='right')
                     ),
                     alt.Color(
                         f'{self.group_by}:N',
@@ -1164,7 +1164,7 @@ class FscGrades(CanvasConnection):
                     'Section:N',
                     sort=self.section_order,
                     title='',
-                    axis=alt.Axis(orient='right', domain=False)
+                    axis=alt.Axis(orient='right')
                 ),
                 alt.Color(
                     'Section:N',
@@ -1181,7 +1181,7 @@ class FscGrades(CanvasConnection):
                         'Section:N',
                         sort=self.section_order,
                         title='',
-                        axis=alt.Axis(orient='right', domain=False)
+                        axis=alt.Axis(orient='right')
                     ),
                     color=alt.value('#353535')
                 ),
