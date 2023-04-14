@@ -1096,7 +1096,7 @@ class FscGrades(CanvasConnection):
             ),
             alt.Y(
                 'violin_cloud',
-                scale=alt.Scale(padding=5),
+                scale=alt.Scale(padding=5, domain=(-1, 1)),
                 axis=alt.Axis(
                     domain=False,
                     title='',
