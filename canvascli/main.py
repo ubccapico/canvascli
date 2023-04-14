@@ -701,10 +701,15 @@ class FscGrades(CanvasConnection):
             # the orignal order for facets https://github.com/vega/vega-lite/issues/6221
             assignment_order = assignment_score_df['Assignment'].unique().tolist()
 
+            # Constant range 50 - 100 by default
+            bin_extent = (
+                min(50, assignment_score_df['Score'].min()),
+                100
+            )
             boxplot_base = alt.Chart(
                 assignment_score_df
             ).mark_boxplot(median={'color': 'black'}).encode(
-                alt.X('Score', scale=alt.Scale(zero=False)),
+                alt.X('Score', scale=alt.Scale(zero=False)).scale(domain=bin_extent),
                 y=alt.value(height + 10),
             )
             boxplots = alt.layer(
@@ -739,7 +744,7 @@ class FscGrades(CanvasConnection):
                     assignment_score_df,
                     height=height,
                 ).mark_bar().encode(
-                    x=alt.X('Score', bin=True, axis=alt.Axis(offset=20)),
+                    x=alt.X('Score', bin=alt.Bin(extent=bin_extent, maxbins=25), axis=alt.Axis(offset=20)),
                     y=alt.Y('count()', title='Student Count'),
                 ),
                 boxplots,
@@ -1005,6 +1010,7 @@ class FscGrades(CanvasConnection):
         )
 
         # Plot distribution
+        # Constant range 50 - 100 by default
         bin_extent = (
             min(50, self.fsc_grades_for_viz['Percent Grade'].min()),
             100
