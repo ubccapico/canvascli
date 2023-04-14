@@ -739,7 +739,7 @@ class FscGrades(CanvasConnection):
                     assignment_score_df,
                     height=height,
                 ).mark_bar().encode(
-                    x=alt.X('Score', bin=alt.Bin(step=5), axis=alt.Axis(offset=20)),
+                    x=alt.X('Score', bin=True, axis=alt.Axis(offset=20)),
                     y=alt.Y('count()', title='Student Count'),
                 ),
                 boxplots,
@@ -1005,8 +1005,12 @@ class FscGrades(CanvasConnection):
         )
 
         # Plot distribution
+        bin_extent = (
+            min(50, self.fsc_grades_for_viz['Percent Grade'].min()),
+            100
+        )
         self.hist = alt.Chart(self.fsc_grades_for_viz, height=180).mark_bar().encode(
-            alt.X('Percent Grade', bin=alt.Bin(step=5), title='', axis=alt.Axis(labels=False)),
+            alt.X('Percent Grade', bin=alt.Bin(extent=bin_extent), title='', axis=alt.Axis(labels=False)),
             alt.Y('count()', title='Student Count')
         )
 
@@ -1017,7 +1021,7 @@ class FscGrades(CanvasConnection):
         # The opacity setting makes sure that the scale is lined up with the hisotrgams
         # while not showing outliers
         ).mark_boxplot(outliers={'opacity': 0}, median={'color': 'black'}).encode(
-            alt.X('Percent Grade', title='Final Percent Grade'),
+            alt.X('Percent Grade', title='Final Percent Grade').scale(domain=bin_extent),
             y=alt.value(10)
         )
         self.box = alt.layer(
@@ -1060,7 +1064,6 @@ class FscGrades(CanvasConnection):
                     domain=False
                 ),
                 scale=alt.Scale(
-                    padding=5,
                     zero=False,
                     nice=False,
                 )
@@ -1130,7 +1133,7 @@ class FscGrades(CanvasConnection):
             # The opacity setting makes sure that the scale is lined up with the hisotrgams
             # while not showing outliers
             ).mark_boxplot(outliers={'opacity': 0}, median={'color': 'black'}).encode(
-                alt.X('Percent Grade', title='Final Percent Grade'),
+                alt.X('Percent Grade', title='Final Percent Grade').scale(domain=bin_extent),
                 alt.Y(
                     'Section:N',
                     sort=self.section_order,
