@@ -508,6 +508,25 @@ class FscGrades(CanvasConnection):
             )
             click.echo(dropped_students.to_markdown(index=False))
             click.echo()
+
+        # It seems like students can be registered for multiple sections
+        if self.canvas_grades.duplicated(subset='User ID').sum() > 0:
+            click.secho('WARNING', fg='red', bold=True)
+            click.echo(
+                'The following students are enrolled in multiple sections.'
+                '\nOnly the first occurrence will be kept.'
+            )
+            click.echo(
+                self.canvas_grades[
+                    self.canvas_grades['User ID']
+                    .duplicated(keep=False)
+                ]
+                .drop(columns='Unposted Percent Grade')
+                .to_markdown(index=False)
+            )
+            click.echo()
+            self.canvas_grades = self.canvas_grades.drop_duplicates(subset='User ID')
+
         return
 
     def convert_grades_to_fsc_format(self):
