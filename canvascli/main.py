@@ -788,7 +788,7 @@ class FscGrades(CanvasConnection):
             if self.group_by is not None:
                 boxplot_base = alt.Chart(
                     assignment_score_df.reset_index(),
-                    height=height + 20 + 2,
+                    height=height + 20,
                 ).mark_boxplot(median={'color': 'black'}).encode(  # TODO increase thickness and switch from black in new altair version
                     alt.X('Score', scale=alt.Scale(zero=False)),
                     alt.Y(
