@@ -708,7 +708,7 @@ class FscGrades(CanvasConnection):
             )
             boxplot_base = alt.Chart(
                 assignment_score_df
-            ).mark_boxplot(median={'color': 'black'}).encode(
+            ).mark_boxplot(outliers={'opacity': 0}, median={'color': 'black'}).encode(
                 alt.X('Score', scale=alt.Scale(zero=False)).scale(domain=bin_extent),
                 y=alt.value(height + 10),
             )
