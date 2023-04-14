@@ -743,6 +743,7 @@ class FscGrades(CanvasConnection):
                 alt.Chart(
                     assignment_score_df,
                     height=height,
+                    width=355
                 ).mark_bar().encode(
                     x=alt.X('Score', bin=alt.Bin(extent=bin_extent, maxbins=25), axis=alt.Axis(offset=20)),
                     y=alt.Y('count()', title='Student Count'),
@@ -1015,7 +1016,7 @@ class FscGrades(CanvasConnection):
             min(50, self.fsc_grades_for_viz['Percent Grade'].min()),
             100
         )
-        self.hist = alt.Chart(self.fsc_grades_for_viz, height=180).mark_bar().encode(
+        self.hist = alt.Chart(self.fsc_grades_for_viz, height=180, width=355).mark_bar().encode(
             alt.X('Percent Grade', bin=alt.Bin(extent=bin_extent), title='', axis=alt.Axis(labels=False)),
             alt.Y('count()', title='Student Count')
         )
