@@ -358,6 +358,7 @@ class FscGrades(CanvasConnection):
         for enrollment in enrollments_progress_bar:
             canvas_grades['User ID'].append(enrollment.user['id'])
 
+            # `sis_user_id` is removed from concluded courses by Canvas
             if hasattr(enrollment.user, 'sis_user_id'):
                 canvas_grades['Student Number'].append(enrollment.user['sis_user_id'])
             else:
@@ -367,6 +368,10 @@ class FscGrades(CanvasConnection):
             canvas_grades['Surname'].append(surname)
             canvas_grades['Preferred Name'].append(preferred_name)
             canvas_grades['Section'].append(enrollment.course_section_id)
+            # Unposted "current" is what matches what is seen on Canvas for a course in progress
+            # Unposted "final" deducts points for assignments without a grade
+            # (it treats them as if an explicit grade of `0` was given, which is undesirable)
+            canvas_grades['Unposted Percent Grade'].append(enrollment.grades['unposted_current_score'])
 
             # A warning message is later displayed for these students
             if 'override_score' in enrollment.grades:
@@ -377,12 +382,16 @@ class FscGrades(CanvasConnection):
                 canvas_grades['override_final_score'].append(0)
 
             # A warning message is later displayed for these students
+            # Need to check for "final unposted" here rather than "current unposted"
             if 'unposted_final_score' in enrollment.grades:
-                canvas_grades['Unposted Percent Grade'].append(enrollment.grades['unposted_final_score'])
+                canvas_grades['Unposted Final Grade'].append(enrollment.grades['unposted_final_score'])
                 if enrollment.grades['unposted_final_score'] != enrollment.grades['final_score']:
                     canvas_grades['different_unposted_score'].append(True)
                 else:
                     canvas_grades['different_unposted_score'].append(False)
+            else:
+                canvas_grades['Unposted Final Grade'].append(pd.NA)
+                canvas_grades['different_unposted_score'].append(False)
 
         self.canvas_grades = pd.DataFrame(canvas_grades)
 
@@ -439,28 +448,31 @@ class FscGrades(CanvasConnection):
 
         # Warn about students with unposted grades that change their final scores
         if different_unposted_score.sum() > 0:
+            students_with_unposted_score = self.canvas_grades.query(
+                '@different_unposted_score == True'
+            # Dropping the unposted percent grade to not cause confusion by showing two "unposted" columns
+            ).drop(
+                columns='Unposted Percent Grade'
+            )
+
             click.secho('\nWARNING', fg='red', bold=True)
             click.echo(
                 'Remember to post all assignments on Canvas'
                 '\nbefore creating the CSV-file to upload to the FSC.'
                 '\nThere are currently unposted Canvas assignments'
-            )
-            students_with_unposted_score = self.canvas_grades.query(
-                '@different_unposted_score == True'
+                '\nthat would change the final score of '
+                + click.style(f'{students_with_unposted_score.shape[0]} students.', bold=True)
             )
             if students_with_unposted_score.shape[0] > 10:
-                click.echo(
-                    'that would change the final score of '
-                    + click.style(f'{students_with_unposted_score.shape[0]} students.', bold=True)
-                )
-                click.echo('Showing the first 10 here:\n')
-                click.echo(students_with_unposted_score[:10].to_markdown(index=False))
+                click.echo('Showing the first 10 in the table below:\n')
             else:
-                click.echo(
-                    'that would change the final score of the following '
-                    + click.style(f'{students_with_unposted_score.shape[0]} students:\n', bold=True)
-                )
-                click.echo(students_with_unposted_score.to_markdown(index=False))
+                click.echo('Showing these students in the table below:\n')
+            # Indexing up until the first 10 works even if there are fewer than 10 entries
+            click.echo(students_with_unposted_score[:10].to_markdown(index=False))
+            click.echo('')
+        # The unposted "final" grade is only needed for the comparison above
+        # For everyhting else, we use the unposted "current" grade
+        self.canvas_grades = self.canvas_grades.drop(columns='Unposted Final Grade')
         return
 
     def drop_student_entries(self):
