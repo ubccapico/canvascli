@@ -750,7 +750,7 @@ class FscGrades(CanvasConnection):
             boxplot_base = alt.Chart(
                 assignment_score_df
             ).mark_boxplot(outliers={'opacity': 0}, median={'color': 'black'}).encode(
-                alt.X('Score', scale=alt.Scale(zero=False)).scale(domain=bin_extent),
+                alt.X('Score', scale=alt.Scale(zero=False)).scale(domain=bin_extent, nice=False),
                 y=alt.value(height + 10),
             )
             boxplots = alt.layer(
@@ -812,7 +812,7 @@ class FscGrades(CanvasConnection):
                     assignment_score_df.reset_index(),
                     height=height + 20,
                 ).mark_boxplot(median={'color': 'black'}).encode(  # TODO increase thickness and switch from black in new altair version
-                    alt.X('Score', scale=alt.Scale(zero=False, domain=bin_extent)),
+                    alt.X('Score', scale=alt.Scale(zero=False, domain=bin_extent, nice=False)),
                     alt.Y(
                         f'{self.group_by}:N',
                         sort=self.group_order,
@@ -1081,7 +1081,7 @@ class FscGrades(CanvasConnection):
         # The opacity setting makes sure that the scale is lined up with the hisotrgams
         # while not showing outliers
         ).mark_boxplot(outliers={'opacity': 0}, median={'color': 'black'}).encode(
-            alt.X('Percent Grade', title='Final Percent Grade').scale(domain=bin_extent),
+            alt.X('Percent Grade', title='Final Percent Grade').scale(domain=bin_extent, nice=False),
             y=alt.value(10)
         )
         self.box = alt.layer(
@@ -1193,7 +1193,7 @@ class FscGrades(CanvasConnection):
             # The opacity setting makes sure that the scale is lined up with the hisotrgams
             # while not showing outliers
             ).mark_boxplot(outliers={'opacity': 0}, median={'color': 'black'}).encode(
-                alt.X('Percent Grade', title='Final Percent Grade').scale(domain=bin_extent),
+                alt.X('Percent Grade', title='Final Percent Grade').scale(domain=bin_extent, nice=False),
                 alt.Y(
                     'Section:N',
                     sort=self.section_order,
