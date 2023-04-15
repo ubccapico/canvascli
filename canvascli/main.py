@@ -632,6 +632,7 @@ class FscGrades(CanvasConnection):
                 if a.published
                   and a.points_possible is not None
                   and a.points_possible > 0
+                  and a.graded_submissions_exist
                   and assignment_regex.search(a.name)
             ]
 
