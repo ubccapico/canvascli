@@ -629,11 +629,13 @@ class FscGrades(CanvasConnection):
             assignment_regex = re.compile(self.filter_assignments)
             assignments = [
                 a for a in self.course.get_assignments()
-                if a.published
-                  and a.points_possible is not None
-                  and a.points_possible > 0
-                  and a.graded_submissions_exist
-                  and assignment_regex.search(a.name)
+                if (
+                    a.published
+                    and a.points_possible is not None
+                    and a.points_possible > 0
+                    and a.graded_submissions_exist
+                    and assignment_regex.search(a.name)
+                )
             ]
 
             # Raise error so that it is clear to the user what happens
