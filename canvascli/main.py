@@ -1073,6 +1073,7 @@ class FscGrades(CanvasConnection):
             alt.X('Percent Grade', bin=alt.Bin(extent=bin_extent, step=5), title='', axis=alt.Axis(labels=False)),
             alt.Y('count()', title='Student Count')
         )
+        axis_values = list(range(int(bin_extent[0]), int(bin_extent[1]) + 1, 5))
 
         # Plot box
         box_base = alt.Chart(
@@ -1081,7 +1082,9 @@ class FscGrades(CanvasConnection):
         # The opacity setting makes sure that the scale is lined up with the hisotrgams
         # while not showing outliers
         ).mark_boxplot(outliers={'opacity': 0}, median={'color': 'black'}).encode(
-            alt.X('Percent Grade', title='Final Percent Grade').scale(domain=bin_extent, nice=False),
+            alt.X('Percent Grade', title='Final Percent Grade')
+                .scale(domain=bin_extent, nice=False)
+                .axis(values=axis_values),
             y=alt.value(10)
         )
         self.box = alt.layer(
@@ -1193,7 +1196,9 @@ class FscGrades(CanvasConnection):
             # The opacity setting makes sure that the scale is lined up with the hisotrgams
             # while not showing outliers
             ).mark_boxplot(outliers={'opacity': 0}, median={'color': 'black'}).encode(
-                alt.X('Percent Grade', title='Final Percent Grade').scale(domain=bin_extent, nice=False),
+                alt.X('Percent Grade', title='Final Percent Grade')
+                    .scale(domain=bin_extent, nice=False)
+                    .axis(values=axis_values),
                 alt.Y(
                     'Section:N',
                     sort=self.section_order,
@@ -1268,7 +1273,12 @@ class FscGrades(CanvasConnection):
                     self.strip.add_params(self.hover).transform_filter(
                         alt.expr.test(alt.expr.regexp(self.search_input, 'i'), alt.datum.Name)
                     ).interactive() + self.strip_overlay,
-                    self.box & self.box_sections if hasattr(self, 'box_sections') else self.box,
+                    # x='shared' is required here for the `axis_values` to set the x-ticks correctly
+                    # Without it, the ticks do not line up with the histogram ticks
+                    alt.vconcat(
+                        self.box,
+                        self.box_sections
+                    ).resolve_scale(x='shared') if hasattr(self, 'box_sections') else self.box,
                     spacing=0
                 ).properties(
                     title=title
