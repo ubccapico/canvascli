@@ -786,7 +786,7 @@ class FscGrades(CanvasConnection):
                     height=height,
                     width=355
                 ).mark_bar().encode(
-                    x=alt.X('Score', bin=alt.Bin(extent=bin_extent, step=5), axis=alt.Axis(offset=20)),
+                    x=alt.X('Score', bin=alt.Bin(extent=bin_extent, step=2.5), axis=alt.Axis(offset=20)),
                     y=alt.Y('count()', title='Student Count'),
                 ),
                 boxplots,
@@ -1069,11 +1069,11 @@ class FscGrades(CanvasConnection):
             ),
             100
         )
+        axis_values = list(range(int(bin_extent[0]), int(bin_extent[1]) + 1, 5))
         self.hist = alt.Chart(self.fsc_grades_for_viz, height=180, width=355).mark_bar().encode(
-            alt.X('Percent Grade', bin=alt.Bin(extent=bin_extent, step=5), title='', axis=alt.Axis(labels=False)),
+            alt.X('Percent Grade', bin=alt.Bin(extent=bin_extent, step=2.5), title='', axis=alt.Axis(labels=False, values=axis_values)),
             alt.Y('count()', title='Student Count')
         )
-        axis_values = list(range(int(bin_extent[0]), int(bin_extent[1]) + 1, 5))
 
         # Plot box
         box_base = alt.Chart(
@@ -1124,7 +1124,8 @@ class FscGrades(CanvasConnection):
                 axis=alt.Axis(
                     labels=False,
                     ticks=False,
-                    domain=False
+                    domain=False,
+                    values=axis_values
                 ),
                 scale=alt.Scale(
                     zero=False,
