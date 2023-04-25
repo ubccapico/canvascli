@@ -1249,7 +1249,7 @@ class FscGrades(CanvasConnection):
     def layout_and_save_charts(self):
         # Add instructions
         title = alt.Title(
-            text=f'Final Grade Distribution {self.subject} {self.course_name}',
+            text=f'Grade Distribution {self.subject} {self.course_name}',
             subtitle=[
                 'Hover near a point to view student info.',
                 'Hover over the box to view exact summary statistics.',
