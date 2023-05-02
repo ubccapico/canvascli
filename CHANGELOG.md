@@ -5,6 +5,29 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 Version number is based on [Semver](https://semver.org/).
 Note that major version zero (0.y.z) is for initial development and anything may change at any time.
 
+## [0.6.0] 2023-05-02
+
+### Added
+- Automatically detect if there are multiple sections and display a boxplot for each section automatically.
+- Include an option flag to include whether to group by section, grader, or nothing for the charts.
+- Add search box to filter students names in the charts.
+- Add percentile information to each student in the hover info in the scatter plot.
+- Show progress bar while downloading grades
+- Check for students being part of multiple sections.
+
+### Changed
+- Use boxplots with hover info (count, mean, median, quartiles) instead of just a marker for mean and median. Useful to report both overall stats and for each assignment/quiz.
+- Extract student specific section ID instead of propagating the same ID to all students. Useful for courses with combined sections on Canvas.
+- Lay out the scatterplot as a violin cloud so that it is easier to tell the shape of the distribution and the layout is deterministic when changing the dropdown menu or filtering via the search box.
+- Prompt for inclusion of assignments and make the regex easier to use.
+- Change the default number of histogram bins and the range to be more suitable for most grading scenarios.
+
+### Fixed
+- Adjust position of text and widgets to make the charts clearer.
+- Support missing student numbers (happens with concluded courses).
+- Support section IDs that are not numeric
+- Align scales and ticks between boxplots and histograms.
+
 ## [0.5.1] 2022-10-01
 
 ### Changed
