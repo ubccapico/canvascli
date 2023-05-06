@@ -359,7 +359,7 @@ class FscGrades(CanvasConnection):
             canvas_grades['User ID'].append(enrollment.user['id'])
 
             # `sis_user_id` is removed from concluded courses by Canvas
-            if hasattr(enrollment.user, 'sis_user_id'):
+            if 'sis_user_id' in enrollment.user:
                 canvas_grades['Student Number'].append(enrollment.user['sis_user_id'])
             else:
                 # A warning about this case is emitted further down
