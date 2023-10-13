@@ -368,9 +368,23 @@ class FscGrades(CanvasConnection):
             canvas_grades['Surname'].append(surname)
             canvas_grades['Preferred Name'].append(preferred_name)
             canvas_grades['Section'].append(enrollment.course_section_id)
+
+            # Missing these two fields indicate a fatal permissions error
+            if 'unposted_current_score' not in enrollment.grades or 'final_score' not in enrollment.grades:
+                click.secho('\n\nERROR', fg='red', bold=True)
+                click.echo(
+                    'Cannot find the grading fields `unposted_current_score` and `final_score`.'
+                    '\nThis usually mean that you do not have permission to read student grades.'
+                    '\nContact LT hub to upgrade your role (to e.g. "instructor" or "course assistant").'
+                    '\n\nThis is what you currently have permission to view:\n'
+                )
+                click.echo(enrollment.grades)
+                raise SystemExit()
+
             # Unposted "current" is what matches what is seen on Canvas for a course in progress
             # Unposted "final" deducts points for assignments without a grade
-            # (it treats them as if an explicit grade of `0` was given, which is undesirable)
+            # (it treats them as if an explicit grade of `0` was given,
+            # which is undesirable when checking students current progress in the course)
             canvas_grades['Unposted Percent Grade'].append(enrollment.grades['unposted_current_score'])
 
             # A warning message is later displayed for these students
