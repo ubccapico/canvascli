@@ -5,6 +5,14 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 Version number is based on [Semver](https://semver.org/).
 Note that major version zero (0.y.z) is for initial development and anything may change at any time.
 
+## [0.6.2]] 2023-10-15
+
+## Fixed
+- Switch to check "creation" instead of "start" date in the `show-courses` subcommand,
+  since many courses don't have a "start" date listed.
+- Fix handling of NAs in date strings for `show-courses` subcommand.
+- Check that all necessary fields exist and raise an informative error if they do not.
+
 ## [0.6.1]] 2023-05-05
 
 ## Fixed
