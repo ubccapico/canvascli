@@ -203,9 +203,9 @@ def prepare_fsc_grades(course_id, filename, api_url, student_status,
               ' this string (case insensitve). Useful to narrow down the displayed'
               ' results. Default: "" (matches all courses)')
 @click.option('--start-date', 'start_date_', default=None, help='Show courses'
-              ' starting at or after this date. Courses without a start date are'
+              ' created at or after this date. Courses without a creation date are'
               ' always shown. Format "YYYY-MM-DD". Default: Show all courses'
-              ' starting within a year from today.')
+              ' created within a year from today.')
 def show_courses(api_url, filter_, start_date_):
     """Show courses accessible by the given API token.
 
@@ -262,8 +262,9 @@ class AccessibleCourses(CanvasConnection):
                 # Return a default value ('N/A') if the attribute is not found
                 self.courses['id'].append(getattr(course, 'id', 'N/A'))
                 self.courses['name'].append(getattr(course, 'name', 'N/A'))
-                self.courses['end_date'].append(getattr(course, 'end_at', 'N/A'))
-                self.courses['start_at'].append(getattr(course, 'start_at', 'N/A'))
+                self.courses['end_at'].append(getattr(course, 'end_at', pd.NaT))
+                self.courses['start_at'].append(getattr(course, 'start_at', pd.NaT))
+                self.courses['created_at'].append(getattr(course, 'created_at', pd.NaT))
         # Show common exceptions in a way that is easy to understand
         except MissingSchema:
             raise SystemExit(self.invalid_canvas_url_msg)
@@ -274,7 +275,7 @@ class AccessibleCourses(CanvasConnection):
     def filter_and_show_courses(self):
         """Filter and show downloaded courses."""
         # The default is to include courses starting in the past year
-        start_date = pd.to_datetime(
+        creation_date = pd.to_datetime(
             self.start_date_ or datetime.now() - pd.DateOffset(months=12),
             utc=True
         ).date()
@@ -283,18 +284,18 @@ class AccessibleCourses(CanvasConnection):
             pd.DataFrame(
                 self.courses
             ).assign(
-                start_at = lambda df: pd.to_datetime(df['start_at']).dt.date
+                created_at = lambda df: pd.to_datetime(df['created_at'], errors='coerce').dt.date
             ).query(
-                'start_at > @start_date'
+                'created_at > @creation_date | created_at.isna()'
             ).query(
                 'name.str.contains(@self.filter_, case=False)',
                 engine='python'
             ).sort_values(
-                'start_at'
+                'created_at'
             ).drop(
-                columns=['end_date']
+                columns=['end_at', 'start_at']
             ).rename(
-                columns={'id': 'ID', 'name': 'Name', 'start_at': 'Start Date'}
+                columns={'id': 'ID', 'name': 'Name', 'created_at': 'Creation Date'}
             ).to_markdown(
                 index=False
             )
