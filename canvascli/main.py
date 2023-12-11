@@ -348,6 +348,8 @@ class FscGrades(CanvasConnection):
         )
         canvas_grades = defaultdict(list)
 
+        # This is shown in a later warning
+        self.students_with_diff_between_current_and_final_grades = []
         # We can't know the length of `enrollments` since it is an iterable,
         # so this is the best progress bar we can get here
         enrollments_progress_bar = tqdm(
@@ -407,6 +409,12 @@ class FscGrades(CanvasConnection):
             else:
                 canvas_grades['Unposted Final Grade'].append(pd.NA)
                 canvas_grades['different_unposted_score'].append(False)
+
+            if 'current_score' in enrollment.grades:
+                if enrollment.grades['current_score'] != enrollment.grades['final_score']:
+                    self.students_with_diff_between_current_and_final_grades.append(
+                        (preferred_name, surname)
+                    )
 
         self.canvas_grades = pd.DataFrame(canvas_grades)
 
@@ -485,6 +493,21 @@ class FscGrades(CanvasConnection):
             # Indexing up until the first 10 works even if there are fewer than 10 entries
             click.echo(students_with_unposted_score[:10].to_markdown(index=False))
             click.echo('')
+
+        # Warn about having a different current score and final score
+        # This can be true even if the above is not true, e.g. from unpublished assignmend in weighted assignment groups
+        # but not the other way around I think
+        elif self.students_with_diff_between_current_and_final_grades:
+            click.secho('\nWARNING', fg='red', bold=True)
+            click.echo(
+                'Not all assignments have been submitted, graded, and posted on Canvas.'
+                '\nIf you are checking grades during the middle of the semester this is expected.'
+                '\nHowever, if you are about to submit final grades, make sure that all assignments
+                '\nare submitted, graded, and posted before proceeding.'
+                f'\nThere are {len(self.students_with_diff_between_current_and_final_grades)} affected students,'
+                f' the first three are {self.students_with_diff_between_current_and_final_grades[:3]}\n'
+            )
+
         # The unposted "final" grade is only needed for the comparison above
         # For everyhting else, we use the unposted "current" grade
         self.canvas_grades = self.canvas_grades.drop(columns='Unposted Final Grade')
