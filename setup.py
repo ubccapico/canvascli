@@ -21,7 +21,7 @@ setup(
     packages=find_packages(),
     include_package_data=True,
     install_requires=[
-        'altair>=5.0.0rc1',
+        'altair>=5.0.0',
         'canvasapi>=2.1.0',
         'click>=8.0.0',
         'pandas>=1.1.0',
