@@ -502,7 +502,7 @@ class FscGrades(CanvasConnection):
             click.echo(
                 'Not all assignments have been submitted, graded, and posted on Canvas.'
                 '\nIf you are checking grades during the middle of the semester this is expected.'
-                '\nHowever, if you are about to submit final grades, make sure that all assignments
+                '\nHowever, if you are about to submit final grades, make sure that all assignments'
                 '\nare submitted, graded, and posted before proceeding.'
                 f'\nThere are {len(self.students_with_diff_between_current_and_final_grades)} affected students,'
                 f' the first three are {self.students_with_diff_between_current_and_final_grades[:3]}\n'
