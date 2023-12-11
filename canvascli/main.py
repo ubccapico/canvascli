@@ -717,7 +717,8 @@ class FscGrades(CanvasConnection):
             # self.canvas has had dropped students removed at this point
             # so we can use it to drop from the assignment score as well
             assignment_score_df = assignment_score_df.query(
-                '`User ID` in @self.canvas_grades["User ID"]'
+                '`User ID` in @self.canvas_grades["User ID"]',
+                engine='python'
             ).copy()
 
             # Plot scores for individual assignments
