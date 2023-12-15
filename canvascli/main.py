@@ -563,7 +563,8 @@ class FscGrades(CanvasConnection):
             click.echo('')
 
         # The unposted "final" grade is only needed for the comparison above
-        # For everyhting else, we use the unposted "current" grade
+        # For everything else, we use the unposted "current" grade
+        # since this allows to show the current progress in the course in the visualizations
         self.canvas_grades = self.canvas_grades.drop(columns='Unposted Final Grade')
         return
 
