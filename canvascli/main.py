@@ -484,10 +484,6 @@ class FscGrades(CanvasConnection):
         if different_unposted_score.sum() > 0:
             students_with_unposted_score = self.canvas_grades.query(
                 '@different_unposted_score == True'
-            # Dropping the unposted percent grade to not cause confusion by showing two "unposted" columns
-            ).drop(
-                columns='Unposted Percent Grade'
-            )
 
             click.secho('\nWARNING', fg='red', bold=True)
             click.echo(
