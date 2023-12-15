@@ -484,6 +484,7 @@ class FscGrades(CanvasConnection):
         if different_unposted_score.sum() > 0:
             students_with_unposted_score = self.canvas_grades.query(
                 '@different_unposted_score == True'
+            )
 
             click.secho('\nWARNING', fg='red', bold=True)
             click.echo(
