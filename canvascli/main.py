@@ -493,12 +493,24 @@ class FscGrades(CanvasConnection):
                 '\nthat would change the final score of '
                 + click.style(f'{students_with_unposted_score.shape[0]} students.', bold=True)
             )
-            if students_with_unposted_score.shape[0] > 10:
-                click.echo('Showing the first 10 in the table below:\n')
+            if students_with_unposted_score.shape[0] > 5:
+                click.echo('Showing the first five in the table below:\n')
             else:
                 click.echo('Showing these students in the table below:\n')
             # Indexing up until the first 10 works even if there are fewer than 10 entries
-            click.echo(students_with_unposted_score[:10].to_markdown(index=False))
+            click.echo(
+                students_with_unposted_score[:5]
+                .rename(
+                    columns={
+                        'Percent Grade': 'Posted Grade',
+                        'Unposted Final Grade': 'Unposted Grade',
+                        'Student Number': 'Student ID',
+                    }
+                )
+                .assign(Name=lambda df: df['Preferred Name'] + ' ' + df['Surname'])
+                [['Student ID', 'Name', 'Posted Grade', 'Unposted Grade']]
+                .to_markdown(index=False)
+            )
             click.echo('')
 
         # Warn about having a different current score and final score
@@ -598,7 +610,19 @@ class FscGrades(CanvasConnection):
                 f' with missing information, a grade <= {self.drop_threshold},'
                 '\nor that was explicitly dropped by student number:\n'
             )
-            click.echo(dropped_students.to_markdown(index=False))
+            click.echo(
+                dropped_students
+                .rename(
+                    columns={
+                        'Percent Grade': 'Posted Grade',
+                        'Unposted Percent Grade': 'Unposted Grade',
+                        'Student Number': 'Student ID',
+                    }
+                )
+                .assign(Name=lambda df: df['Preferred Name'] + ' ' + df['Surname'])
+                [['Student ID', 'Name', 'Posted Grade', 'Unposted Grade']]
+                .to_markdown(index=False)
+            )
             click.echo()
 
         # It seems like students can be registered for multiple sections
