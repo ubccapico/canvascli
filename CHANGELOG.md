@@ -5,6 +5,15 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 Version number is based on [Semver](https://semver.org/).
 Note that major version zero (0.y.z) is for initial development and anything may change at any time.
 
+## [0.7.0] 2023-12-14
+
+## Added
+- Warn when there are ungraded assignments, similar to the warning for unposted assignments.
+
+## Fixed
+- Show less rows and columns in warnings to make the output easier to overview.
+- Fix numexpr issue with macs not being able to use the C engine for pandas query
+
 ## [0.6.2]] 2023-10-15
 
 ## Fixed
