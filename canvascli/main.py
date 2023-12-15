@@ -410,11 +410,20 @@ class FscGrades(CanvasConnection):
                 canvas_grades['Unposted Final Grade'].append(pd.NA)
                 canvas_grades['different_unposted_score'].append(False)
 
+            # A warning message is later displayed for these students
+            # This compares "current"/"total" (what is seen on canvas)
+            # with "final" (what is exported).
+            # The only field that is not explicitly checked is "unposted_current_score",
+            # but that should not be needed as the general grade posting is already checked above
             if 'current_score' in enrollment.grades:
+                canvas_grades['Current Grade'].append(enrollment.grades['current_score'])
                 if enrollment.grades['current_score'] != enrollment.grades['final_score']:
-                    self.students_with_diff_between_current_and_final_grades.append(
-                        (preferred_name, surname)
-                    )
+                    canvas_grades['different_current_score'].append(True)
+                else:
+                    canvas_grades['different_current_score'].append(False)
+            else:
+                canvas_grades['Current Grade'].append(pd.NA)
+                canvas_grades['different_current_score'].append(False)
 
         self.canvas_grades = pd.DataFrame(canvas_grades)
 
@@ -495,18 +504,53 @@ class FscGrades(CanvasConnection):
             click.echo('')
 
         # Warn about having a different current score and final score
-        # This can be true even if the above is not true, e.g. from unpublished assignmend in weighted assignment groups
+        # This can be true even if the above is not true,
+        # e.g. from unpublished assignmend in weighted assignment groups
         # but not the other way around I think
-        elif self.students_with_diff_between_current_and_final_grades:
+        # We only show this warning if the other warning is not already shown,
+        # so it doesn't get too noisy.
+        # This should be safe since posting all grades is one of the conditions
+        # that this warning relies on as well
+        elif different_current_score.sum() > 0:
+            students_with_diff_current_score = self.canvas_grades.query(
+                '@different_current_score == True'
+            )
+
             click.secho('\nWARNING', fg='red', bold=True)
             click.echo(
-                'Not all assignments have been submitted, graded, and posted on Canvas.'
-                '\nIf you are checking grades during the middle of the semester this is expected.'
-                '\nHowever, if you are about to submit final grades, make sure that all assignments'
-                '\nare submitted, graded, and posted before proceeding.'
-                f'\nThere are {len(self.students_with_diff_between_current_and_final_grades)} affected students,'
-                f' the first three are {self.students_with_diff_between_current_and_final_grades[:3]}\n'
+                'Remember to grade all assignments on Canvas'
+                '\nbefore creating the CSV-file to upload to the FSC.'
+                '\nNote that the "Total" grade shown on Canvas'
+                '\nis not taking into account ungraded assignments (marked as "-"),'
+                '\nso it is not the same as the final grade (which replaces "-" with "0").'
+                '\nIf all such cases are for students who did not make a submission'
+                '\nand therefore should get a 0, no action is required.'
+                '\nThere are currently ungraded Canvas assignments'
+                '\nthat would change the final score of '
+                + click.style(f'{students_with_diff_current_score.shape[0]} students.', bold=True)
             )
+
+            if students_with_diff_current_score.shape[0] > 5:
+                click.echo('Showing the first five in the table below:\n')
+            else:
+                click.echo('Showing these students in the table below:\n')
+            # Indexing up until the first 10 works even if there are fewer than 10 entries
+            click.echo(
+                students_with_diff_current_score[:5]
+                # Renaming the current grade to "total" to match the canvas interface
+                # and make it easier to understand where this column is coming from
+                .rename(
+                    columns={
+                        'Percent Grade': 'Final Grade',
+                        'Current Grade': 'Canvas "Total"',
+                        'Student Number': 'Student ID',
+                    }
+                )
+                .assign(Name=lambda df: df['Preferred Name'] + ' ' + df['Surname'])
+                [['Student ID', 'Name', 'Final Grade', 'Canvas "Total"']]
+                .to_markdown(index=False)
+            )
+            click.echo('')
 
         # The unposted "final" grade is only needed for the comparison above
         # For everyhting else, we use the unposted "current" grade
