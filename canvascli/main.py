@@ -455,9 +455,8 @@ class FscGrades(CanvasConnection):
             self.canvas_grades['Section'].map(section_ids_and_names)
         )
 
-        different_unposted_score = self.canvas_grades.pop('different_unposted_score')
-        override_final_score = self.canvas_grades.pop('override_final_score')
         # Display a note that some student grade are manually overridden
+        override_final_score = self.canvas_grades.pop('override_final_score')
         if override_final_score.sum() > 0:
             click.secho('\nNOTE', fg='yellow', bold=True)
             click.echo(
@@ -479,6 +478,9 @@ class FscGrades(CanvasConnection):
             click.echo()
 
         # Warn about students with unposted grades that change their final scores
+        different_unposted_score = self.canvas_grades.pop('different_unposted_score')
+        # This is checked in the next condition but since that is an `elif` we need to pop here
+        different_current_score = self.canvas_grades.pop('different_current_score')
         if different_unposted_score.sum() > 0:
             students_with_unposted_score = self.canvas_grades.query(
                 '@different_unposted_score == True'
