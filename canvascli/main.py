@@ -443,7 +443,7 @@ class FscGrades(CanvasConnection):
         # We are relying on the same extraction pattern as for the FSC grades,
         # which LT hub mentioned should be safe to extract from the
         # canvas course code (for UBC courses in general).
-        # There is no override for the individual student 
+        # There is no override for the individual student
         # which should be safe.
         # Originally there was a check to verify that the course section is a number
         # but it turns out some courses don't use numbers for the sections
@@ -455,9 +455,8 @@ class FscGrades(CanvasConnection):
             self.canvas_grades['Section'].map(section_ids_and_names)
         )
 
-        # Display a note that some student grade are manually overridden
-        override_final_score = self.canvas_grades.pop('override_final_score')
-        if override_final_score.sum() > 0:
+        # Display a note that some student grades are manually overridden
+        if self.canvas_grades['override_final_score'].sum() > 0:
             click.secho('\nNOTE', fg='yellow', bold=True)
             click.echo(
                 'You have used the "Overide" column on Canvas'
@@ -465,17 +464,20 @@ class FscGrades(CanvasConnection):
             )
             click.echo(
                 self.canvas_grades
-                    .query(
-                        '@override_final_score > 0'
-                    ).assign(
-                        **{'Percent Grade Before Override': override_final_score}
-                    ).drop(
-                        columns='Unposted Percent Grade'
-                    ).to_markdown(
-                        index=False
-                    )
+                .query('override_final_score > 0')
+                .rename(
+                    columns={
+                        'Percent Grade': 'Final Grade',
+                        'Student Number': 'Student ID',
+                        'override_final_score': 'Grade Before Override'
+                    }
                 )
+                .assign(Name=lambda df: df['Preferred Name'] + ' ' + df['Surname'])
+                [['Student ID', 'Name', 'Final Grade', 'Grade Before Override']]
+                .to_markdown(index=False)
+            )
             click.echo()
+        self.canvas_grades = self.canvas_grades.drop(columns='override_final_score')
 
         # Warn about students with unposted grades that change their final scores
         different_unposted_score = self.canvas_grades.pop('different_unposted_score')
