@@ -5,6 +5,12 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 Version number is based on [Semver](https://semver.org/).
 Note that major version zero (0.y.z) is for initial development and anything may change at any time.
 
+## [Unreleased] ???
+
+## Fixed
+
+- Print fewer columns for students with an override score so that it is easier to overview.
+
 ## [0.7.0] 2023-12-14
 
 ## Added
