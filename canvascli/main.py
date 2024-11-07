@@ -42,8 +42,8 @@ def cli():
 
     \b
     Examples:
-        # Download grades from canvas and convert them to FSC format
-        canvascli prepare-fsc-grades --course-id 53665
+        # Download grades from canvas and convert them to their final submission format
+        canvascli prepare-grades --course-id 53665
         \b
         # Show courses accessible by the given API token
         canvascli show-courses
@@ -161,43 +161,43 @@ def prepare_grades(course_id, section, filename, api_url, student_status,
                    drop_students, drop_threshold, drop_na, open_chart,
                    filter_assignments, group_by, override_campus, override_course,
                    override_section, override_session, override_subject):
-    """Prepare course grades for FSC submission.
+    """Prepare course grades for submission to e.g. Workday.
     \b
     Download grades from a canvas course and convert them to the format
-    required by the FSC for submission of final grades.
+    required for submission of final grades.
 
     Grades are rounded to whole percentages and capped at 100.
     Students with missing info or 0 grade are dropped by default.
 
     A CSV file is saved in the current directory,
-    which can be uploaded directly to FSC.
+    which can be uploaded directly to the file server, e.g. Workday.
     A grade distribution chart is saved in the current directory.
 
     \b
     Examples:
-        # Download grades from canvas and convert them to FSC format
+        # Download grades from canvas and convert them to their final submission format
         canvascli prepare_grades --course-id 53665
         \b
         # Give a custom file name and drop a specific student
         canvascli prepare_grades --course-id 53665 --drop-students "43659202"
     """
-    fsc_grades = FscGrades(
+    prepared_grades = PreparedGrades(
         course_id, section, filename, api_url, student_status, drop_students,
         drop_threshold, drop_na, open_chart, filter_assignments, group_by, override_campus,
         override_course, override_section, override_session, override_subject)
-    fsc_grades.connect_to_canvas()
-    fsc_grades.connect_to_course()
-    fsc_grades.get_canvas_grades()
-    fsc_grades.drop_student_entries()
-    fsc_grades.convert_grades_to_fsc_format()
-    if fsc_grades.fsc_grades.empty:
+    prepared_grades.connect_to_canvas()
+    prepared_grades.connect_to_course()
+    prepared_grades.get_canvas_grades()
+    prepared_grades.drop_student_entries()
+    prepared_grades.convert_grades_to_submission_format()
+    if prepared_grades.prepared_grades.empty:
         click.echo('Did not find any assigned grades, exiting.')
     else:
-        fsc_grades.save_fsc_grades_to_file()
-        fsc_grades.plot_fsc_grade_distribution()
-        fsc_grades.plot_assignment_scores()
-        fsc_grades.layout_and_save_charts()
-        fsc_grades.show_manual_grade_entry_note()
+        prepared_grades.save_prepared_grades_to_file()
+        prepared_grades.plot_prepared_grade_distribution()
+        prepared_grades.plot_assignment_scores()
+        prepared_grades.layout_and_save_charts()
+        prepared_grades.show_manual_grade_entry_note()
     return
 
 
@@ -309,8 +309,8 @@ class AccessibleCourses(CanvasConnection):
 
 
 @dataclass
-class FscGrades(CanvasConnection):
-    """Prepare FSC grades for a specific course."""
+class PreparedGrades(CanvasConnection):
+    """Prepare grades for a specific course."""
     course_id: int
     section: str
     filename: str
@@ -343,7 +343,7 @@ class FscGrades(CanvasConnection):
         except Unauthorized:
             raise SystemExit(self.unauthorized_course_access_msg.format(self.course_id))
         if self.filename is None:
-            self.filename = (f'fsc-grades_{self.course.course_code.replace(" ", "-")}'
+            self.filename = (f'grades_{self.course.course_code.replace(" ", "-")}'
                              .replace('/', '-'))
         return
 
@@ -440,13 +440,13 @@ class FscGrades(CanvasConnection):
                 'Could not find students numbers for at least one student.'
                 '\nThis does not impact the visualizations,'
                 '\nbut you must add student numbers manually'
-                '\nbefore uploading the CSV file to the FSC.'
+                '\nbefore uploading the CSV file for submission.'
                 '\nThis could happen because your course has concluded'
                 '\nor because it includes a test student account.\n'
             )
 
         # Extract course section IDs for each students
-        # We are relying on the same extraction pattern as for the FSC grades,
+        # We are relying on the same extraction pattern as for the prepared grades,
         # which LT hub mentioned should be safe to extract from the
         # canvas course code (for UBC courses in general).
         # There is no override for the individual student
@@ -497,7 +497,7 @@ class FscGrades(CanvasConnection):
             click.secho('\nWARNING', fg='red', bold=True)
             click.echo(
                 'Remember to post all assignments on Canvas'
-                '\nbefore creating the CSV-file to upload to the FSC.'
+                '\nbefore creating the CSV-file to upload for submission.'
                 '\nThere are currently unposted Canvas assignments'
                 '\nthat would change the final score of '
                 + click.style(f'{students_with_unposted_score.shape[0]} students.', bold=True)
@@ -593,7 +593,7 @@ class FscGrades(CanvasConnection):
         # Drop students that have missing info in any field
         # These are also printed so that it is clear to the user what has happened
         # and they need to be explicit in disabling the behavior instead of
-        # accidentally uploading empty fields to FSC.
+        # accidentally uploading empty fields when submitting final grades.
         if self.drop_na:
             dropped_students = pd.concat([
                 dropped_students,
@@ -659,8 +659,8 @@ class FscGrades(CanvasConnection):
 
         return
 
-    def convert_grades_to_fsc_format(self):
-        """Convert grades to FSC format."""
+    def convert_grades_to_submission_format(self):
+        """Convert grades to the final submission format."""
         self.campus = 'UBC'
         # LT hub mentioned that these fields should be safe to extract from the
         # canvas course code (for UBC courses in general), but there is an override
@@ -683,48 +683,48 @@ class FscGrades(CanvasConnection):
         if self.override_subject is not None:
             self.subject = self.override_subject
         
-        # Add FSC info to the dataframe; standing and standing reason are
+        # Add required info to the dataframe; standing and standing reason are
         # blank by default and filled out manually when needed
-        self.fsc_grades = self.canvas_grades.copy()
-        additional_fsc_fields = [
+        self.prepared_grades = self.canvas_grades.copy()
+        additional_fields = [
             'Campus', 'Course', 'Session', 'Subject', 'Standing', 'Standing Reason'
         ]
-        self.fsc_grades[additional_fsc_fields] = (
+        self.prepared_grades[additional_fields] = (
             self.campus, self.course_name, self.session, self.subject, '', '')
         
         # The new workday format seems to set the "Grading Basis" column to "Graded"
         # for every student in the the downloaded CSV file, before knowing whether a grade will actually be entered.
         # Just brilliant... I'm unsure whether we need to remove this if a grade is not entered.
-        self.fsc_grades['Grading Basis'] = 'Graded'
-        self.fsc_grades['Grade Note'] = ''
-        self.fsc_grades['Status'] = ''
-        self.fsc_grades['Updated By'] = ''
+        self.prepared_grades['Grading Basis'] = 'Graded'
+        self.prepared_grades['Grade Note'] = ''
+        self.prepared_grades['Status'] = ''
+        self.prepared_grades['Updated By'] = ''
         # Workday also does not adhere to the same format as Canvas for the Academic Period/Session because that would be too logical
         year = self.session[:4]
         term = self.session[4:]
-        self.fsc_grades['Academic Period'] = (
+        self.prepared_grades['Academic Period'] = (
             f'{year}-{int(year[2:]) + 1} Winter Term {term[1]} (UBC-{self.subject.split("_")[-1]})'
         )
 
-        # Round to whole percentage format since FSC requires that
+        # Round to whole percentage format since final submission requires it.
         # Using Decimal to always round up .5 instead of rounding to even,
         # which is the default in numpy but could seem unfair to individual students.
         # The Decimal type is not json serializable (issue for altair) so changing to int.
-        self.fsc_grades['Exact Percent Grade'] = self.fsc_grades['Percent Grade']
-        self.fsc_grades['Percent Grade'] = self.fsc_grades['Percent Grade'].apply(
+        self.prepared_grades['Exact Percent Grade'] = self.prepared_grades['Percent Grade']
+        self.prepared_grades['Percent Grade'] = self.prepared_grades['Percent Grade'].apply(
             lambda x: Decimal(x).quantize(0, rounding=ROUND_HALF_UP)).astype(int)
 
-        self.fsc_grades['Unposted Exact Percent Grade'] = self.fsc_grades['Unposted Percent Grade']
-        self.fsc_grades['Unposted Percent Grade'] = self.fsc_grades['Unposted Percent Grade'].apply(
+        self.prepared_grades['Unposted Exact Percent Grade'] = self.prepared_grades['Unposted Percent Grade']
+        self.prepared_grades['Unposted Percent Grade'] = self.prepared_grades['Unposted Percent Grade'].apply(
             lambda x: Decimal(x).quantize(0, rounding=ROUND_HALF_UP)).astype(int)
 
         # Cap grades at 100
-        self.fsc_grades.loc[self.fsc_grades['Percent Grade'] > 100, 'Percent Grade'] = 100
+        self.prepared_grades.loc[self.prepared_grades['Percent Grade'] > 100, 'Percent Grade'] = 100
 
         return
 
-    def save_fsc_grades_to_file(self):
-        """Write a CSV file that can be uploaded to FSC."""
+    def save_prepared_grades_to_file(self):
+        """Write a CSV file that can be uploaded for final grade submission."""
         excel_file_name = self.filename + '.xlsx'
         # Note that Workday does not accept files created with openpyxl so we use xlsxwriter
         # which also has the advantage to be able to autofit the columns
@@ -732,9 +732,9 @@ class FscGrades(CanvasConnection):
             # Workday has some issues with renderering default pandas header style
             excel.ExcelFormatter.header_style = None
             if not len(self.section):  # The default is an empty tuple which means "all sections"
-                self.section = self.fsc_grades['Section'].unique()
+                self.section = self.prepared_grades['Section'].unique()
             # Reorder columns to match the required Workday format
-            self.fsc_grades.query(
+            self.prepared_grades.query(
                 'Section in @self.section'
             ).rename(
                 columns={
@@ -863,7 +863,7 @@ class FscGrades(CanvasConnection):
             # Using `round` instead of `Decimal` here
             # since the latter can't deal with a df with a single `None`
             # and because this is just to show on the assignment scores,
-            # so it does not have to be fairly rounded like the final FSC grades.
+            # so it does not have to be fairly rounded like the final submission grades.
             assignment_score_df['Score'] = assignment_score_df['Score'].round(2)
             # self.canvas has had dropped students removed at this point
             # so we can use it to drop from the assignment score as well
@@ -1093,7 +1093,7 @@ class FscGrades(CanvasConnection):
                 ).interactive()
             return
 
-    def plot_fsc_grade_distribution(self):
+    def plot_prepared_grade_distribution(self):
 
         def _compute_violin_cloud(series):
             """Create a violin-shaped point cloud.
@@ -1133,37 +1133,37 @@ class FscGrades(CanvasConnection):
         # Prepare dataframe for filtering via Altair selection elements
         # First the rounded and raw scores are melted together separately for posted and unposted scores
         # Then they are merged into one frame and the posted and unposted score are melted together
-        self.fsc_grades_for_viz = pd.merge(
+        self.prepared_grades_for_viz = pd.merge(
             # Frame 1
-            self.fsc_grades.rename(
+            self.prepared_grades.rename(
                 columns={
-                    'Unposted Percent Grade': 'FSC Rounded',
+                    'Unposted Percent Grade': 'Submission Rounded',
                     'Unposted Exact Percent Grade': 'Exact Percent'
                 }
             ).assign(
                 # Computing the percentile based score on the rounded percent and with the "max" method
                 # is more lenient/beneficial for students
                 # since they get the max percentile value of everyone with the same score.
-                # This also seems more fair since the FSC rounded percentage
+                # This also seems more fair since the rounded submission percentage
                 # is their actual final grade in the course.
-                Percentile=lambda df: df['FSC Rounded'].rank(pct=True, method='max').round(2) * 100
+                Percentile=lambda df: df['Submission Rounded'].rank(pct=True, method='max').round(2) * 100
             # Combine the rounded and raw *unposted* scores
             ).melt(
                 id_vars=['Preferred Name', 'Surname', 'Student Number', 'User ID', 'Section', 'Percentile'],
-                value_vars=['FSC Rounded', 'Exact Percent'],
+                value_vars=['Submission Rounded', 'Exact Percent'],
                 value_name='Unposted Grade',
                 var_name='Percent Type'
             ),
             # Frame 2
-            self.fsc_grades.rename(
+            self.prepared_grades.rename(
                 columns={
-                    'Percent Grade': 'FSC Rounded',
+                    'Percent Grade': 'Submission Rounded',
                     'Exact Percent Grade': 'Exact Percent'
                 }
             # Combine the rounded and raw *posted* scores
             ).melt(
                 id_vars=['Preferred Name', 'Surname', 'Student Number', 'User ID', 'Section'],
-                value_vars=['FSC Rounded', 'Exact Percent'],
+                value_vars=['Submission Rounded', 'Exact Percent'],
                 value_name='Posted Grade',
                 var_name='Percent Type'
             )
@@ -1181,7 +1181,7 @@ class FscGrades(CanvasConnection):
         with warnings.catch_warnings():
             warnings.simplefilter("ignore", category=FutureWarning)
             # This sorting of values and the index reset is required to line up the violin cloud with the df above
-            self.fsc_grades_for_viz['violin_cloud'] = self.fsc_grades.sort_values(
+            self.prepared_grades_for_viz['violin_cloud'] = self.prepared_grades.sort_values(
                 ['User ID', 'Percent Grade']
             ).reset_index()[[
                 'Exact Percent Grade',
@@ -1205,7 +1205,7 @@ class FscGrades(CanvasConnection):
             value=[{'Grade Status': 'Unposted Grade'}]
         )
         percent_type_dropdown = alt.binding_select(
-            options=['FSC Rounded', 'Exact Percent'],
+            options=['Submission Rounded', 'Exact Percent'],
             name=' '
         )
         self.percent_type_selection = alt.selection_point(
@@ -1232,7 +1232,7 @@ class FscGrades(CanvasConnection):
             min(
                 50,
                 (
-                    self.fsc_grades_for_viz.query(
+                    self.prepared_grades_for_viz.query(
                         '`Grade Status` == "Unposted Grade"'
                     )['Percent Grade'].min()
                     // 5
@@ -1241,14 +1241,14 @@ class FscGrades(CanvasConnection):
             100
         )
         axis_values = list(range(int(bin_extent[0]), int(bin_extent[1]) + 1, 5))
-        self.hist = alt.Chart(self.fsc_grades_for_viz, height=180, width=355).mark_bar().encode(
+        self.hist = alt.Chart(self.prepared_grades_for_viz, height=180, width=355).mark_bar().encode(
             alt.X('Percent Grade', bin=alt.Bin(extent=bin_extent, step=2.5), title='', axis=alt.Axis(labels=False, values=axis_values)),
             alt.Y('count()', title='Student Count')
         )
 
         # Plot box
         box_base = alt.Chart(
-            self.fsc_grades_for_viz,
+            self.prepared_grades_for_viz,
             height=20
         # The opacity setting makes sure that the scale is lined up with the hisotrgams
         # while not showing outliers
@@ -1284,7 +1284,7 @@ class FscGrades(CanvasConnection):
         )
 
         # Plot all observations
-        self.strip = alt.Chart(self.fsc_grades_for_viz, height=70).mark_point(
+        self.strip = alt.Chart(self.prepared_grades_for_viz, height=70).mark_point(
             size=20
         ).transform_calculate(
             Name='datum["Preferred Name"] + " " + datum["Surname"]'
@@ -1344,7 +1344,7 @@ class FscGrades(CanvasConnection):
         # In case "Section" is explicitly passed to group-by
         # although there is only one section
         self.section_order = (
-            self.fsc_grades_for_viz
+            self.prepared_grades_for_viz
             .query('`Percent Type` == "Exact Percent" & `Grade Status` == "Unposted Grade"')
             .groupby('Section')
             ['Percent Grade']
@@ -1354,7 +1354,7 @@ class FscGrades(CanvasConnection):
         )
         # Compare sections if there are more than one (or explicitily specified)
         if self.group_by is None:
-            if self.fsc_grades_for_viz['Section'].nunique() > 1:
+            if self.prepared_grades_for_viz['Section'].nunique() > 1:
                 self.group_by = 'Section'
         if self.group_by == 'Section':
             title_sections = alt.Title(
@@ -1363,7 +1363,7 @@ class FscGrades(CanvasConnection):
             )
 
             box_base_sections = alt.Chart(
-                self.fsc_grades_for_viz,
+                self.prepared_grades_for_viz,
                 title=title_sections
             # The opacity setting makes sure that the scale is lined up with the hisotrgams
             # while not showing outliers
