@@ -113,6 +113,10 @@ def cli():
               ' of the course to download grades from, e.g. 53665. This id'
               ' can be found by running `canvascli show-courses`'
               "(and in the course's canvas page URL). Default: None")
+@click.option('--section', type=str, multiple=True, help='Which sections '
+              ' to include in the exported spreadsheet. Common section IDs are 001, 002, etc.'
+              ' The flag can be used multiple times to specify multiple sections.'
+              ' Does not affect the visualizations. Default: All sections)')
 @click.option('--filename', default=None, help='Name of the saved file and chart'
               ' (without file extension). Default: Automatic based on the course.')
 @click.option('--api-url', default='https://canvas.ubc.ca', help='Base canvas URL.'
@@ -152,7 +156,7 @@ def cli():
               ' detected course session in the CSV file with this text. Default: None')
 @click.option('--override-subject', default=None, help='Override the automatically'
               ' detected course subject in the CSV file with this text. Default: None')
-def prepare_fsc_grades(course_id, filename, api_url, student_status,
+def prepare_fsc_grades(course_id, section, filename, api_url, student_status,
                        drop_students, drop_threshold, drop_na, open_chart,
                        filter_assignments, group_by, override_campus, override_course,
                        override_section, override_session, override_subject):
@@ -177,7 +181,7 @@ def prepare_fsc_grades(course_id, filename, api_url, student_status,
         canvascli prepare_fsc_grades --course-id 53665 --drop-students "43659202"
     """
     fsc_grades = FscGrades(
-        course_id, filename, api_url, student_status, drop_students,
+        course_id, section, filename, api_url, student_status, drop_students,
         drop_threshold, drop_na, open_chart, filter_assignments, group_by, override_campus,
         override_course, override_section, override_session, override_subject)
     fsc_grades.connect_to_canvas()
@@ -307,6 +311,7 @@ class AccessibleCourses(CanvasConnection):
 class FscGrades(CanvasConnection):
     """Prepare FSC grades for a specific course."""
     course_id: int
+    section: str
     filename: str
     api_url: str
     student_status: str
@@ -674,9 +679,12 @@ class FscGrades(CanvasConnection):
             self.session = self.override_session
         if self.override_subject is not None:
             self.subject = self.override_subject
+        
         # Add FSC info to the dataframe; standing and standing reason are
         # blank by default and filled out manually when needed
         self.fsc_grades = self.canvas_grades.copy()
+        if len(self.section):  # The default is an empty tuple which means "all sections"
+            self.fsc_grades = self.fsc_grades.query('Section in @self.section')
         additional_fsc_fields = [
             'Campus', 'Course', 'Session', 'Subject', 'Standing', 'Standing Reason'
         ]
