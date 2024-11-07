@@ -771,6 +771,18 @@ class FscGrades(CanvasConnection):
                 startrow=3,
                 sheet_name='Sheet1'
             )
+            # While the xlsxwriter enginer could autofit widths, it cannot append to existing sheets
+            # so we need to manually set the widths here for openpyxl
+            writer.sheets['Sheet1'].column_dimensions['A'].width = 12
+            writer.sheets['Sheet1'].column_dimensions['B'].width = 17
+            writer.sheets['Sheet1'].column_dimensions['C'].width = 12
+            writer.sheets['Sheet1'].column_dimensions['D'].width = 13
+            writer.sheets['Sheet1'].column_dimensions['E'].width = 7
+            writer.sheets['Sheet1'].column_dimensions['F'].width = 12
+            writer.sheets['Sheet1'].column_dimensions['G'].width = 29
+            writer.sheets['Sheet1'].column_dimensions['H'].width = 14
+            writer.sheets['Sheet1'].column_dimensions['I'].width = 7
+            writer.sheets['Sheet1'].column_dimensions['J'].width = 7
         click.secho(f'Grades saved to {excel_file_name}.', bold=True, fg='green')
         return
 
