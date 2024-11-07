@@ -730,10 +730,11 @@ class FscGrades(CanvasConnection):
             'b': ['Course Registrations', pd.Timestamp.now().strftime('%b %-d, %Y %-I:%-M %p'), '']
         }).to_excel(
             excel_file_name,
+            engine='openpyxl',
             index=False,
             header=False
         )
-        with pd.ExcelWriter(excel_file_name, mode='a', if_sheet_exists='overlay') as writer: 
+        with pd.ExcelWriter(excel_file_name, engine='openpyxl', mode='a', if_sheet_exists='overlay') as writer: 
             # Workday has some issues with renderering default header style
             excel.ExcelFormatter.header_style = None
             if not len(self.section):  # The default is an empty tuple which means "all sections"
