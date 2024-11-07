@@ -683,8 +683,6 @@ class FscGrades(CanvasConnection):
         # Add FSC info to the dataframe; standing and standing reason are
         # blank by default and filled out manually when needed
         self.fsc_grades = self.canvas_grades.copy()
-        if len(self.section):  # The default is an empty tuple which means "all sections"
-            self.fsc_grades = self.fsc_grades.query('Section in @self.section')
         additional_fsc_fields = [
             'Campus', 'Course', 'Session', 'Subject', 'Standing', 'Standing Reason'
         ]
@@ -735,8 +733,12 @@ class FscGrades(CanvasConnection):
             header=False
         )
         with pd.ExcelWriter(excel_file_name, mode='a', if_sheet_exists='overlay') as writer: 
+            if not len(self.section):  # The default is an empty tuple which means "all sections"
+                self.section = self.fsc_grades['Section'].unique()
             # Reorder columns to match the required FSC format
-            self.fsc_grades.rename(
+            self.fsc_grades.query(
+                'Section in @self.section'
+            ).rename(
                 columns={
                     'Student Number': 'Student Id',
                     'Preferred Name': 'Student Preferred Name',
