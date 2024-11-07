@@ -724,22 +724,14 @@ class FscGrades(CanvasConnection):
     def save_fsc_grades_to_file(self):
         """Write a CSV file that can be uploaded to FSC."""
         excel_file_name = self.filename + '.xlsx'
-        # Redundant preamble that workday requires for no good reason
-        pd.DataFrame({
-            'a': ['Record Name:', 'Exported On', ''],
-            'b': ['Course Registrations', pd.Timestamp.now().strftime('%b %-d, %Y %-I:%-M %p'), '']
-        }).to_excel(
-            excel_file_name,
-            engine='openpyxl',
-            index=False,
-            header=False
-        )
-        with pd.ExcelWriter(excel_file_name, engine='openpyxl', mode='a', if_sheet_exists='overlay') as writer: 
-            # Workday has some issues with renderering default header style
+        # Note that Workday does not accept files created with openpyxl so we use xlsxwriter
+        # which also has the advantage to be able to autofit the columns
+        with pd.ExcelWriter(excel_file_name, engine='xlsxwriter') as writer: 
+            # Workday has some issues with renderering default pandas header style
             excel.ExcelFormatter.header_style = None
             if not len(self.section):  # The default is an empty tuple which means "all sections"
                 self.section = self.fsc_grades['Section'].unique()
-            # Reorder columns to match the required FSC format
+            # Reorder columns to match the required Workday format
             self.fsc_grades.query(
                 'Section in @self.section'
             ).rename(
@@ -771,18 +763,12 @@ class FscGrades(CanvasConnection):
                 startrow=3,
                 sheet_name='Sheet1'
             )
-            # While the xlsxwriter enginer could autofit widths, it cannot append to existing sheets
-            # so we need to manually set the widths here for openpyxl
-            writer.sheets['Sheet1'].column_dimensions['A'].width = 12
-            writer.sheets['Sheet1'].column_dimensions['B'].width = 17
-            writer.sheets['Sheet1'].column_dimensions['C'].width = 12
-            writer.sheets['Sheet1'].column_dimensions['D'].width = 13
-            writer.sheets['Sheet1'].column_dimensions['E'].width = 7
-            writer.sheets['Sheet1'].column_dimensions['F'].width = 12
-            writer.sheets['Sheet1'].column_dimensions['G'].width = 29
-            writer.sheets['Sheet1'].column_dimensions['H'].width = 14
-            writer.sheets['Sheet1'].column_dimensions['I'].width = 7
-            writer.sheets['Sheet1'].column_dimensions['J'].width = 7
+            writer.sheets['Sheet1'].autofit()
+            # Redundant preamble that workday requires for no good reason
+            writer.sheets['Sheet1'].write(0, 0, "Record Name:")
+            writer.sheets['Sheet1'].write(0, 1, "Course Registrations")
+            writer.sheets['Sheet1'].write(1, 0, "Exported On:")
+            writer.sheets['Sheet1'].write(1, 1, pd.Timestamp.now().strftime('%b %-d, %Y %-I:%-M %p'))
         click.secho(f'Grades saved to {excel_file_name}.', bold=True, fg='green')
         return
 

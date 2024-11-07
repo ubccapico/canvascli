@@ -31,7 +31,7 @@ setup(
         'appdirs>=1.0',
         'tqdm>=4.40',
         'scipy>=1.4.0',
-        'openpyxl>=3.0',
+        'xlsxwriter>=3.0.6',
     ],
     entry_points={
         'console_scripts': [
