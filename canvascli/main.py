@@ -672,18 +672,13 @@ class FscGrades(CanvasConnection):
             self.section = self.override_section
         if self.override_session is not None:
             self.session = self.override_session
-        else:
-            # Remove the session number suffix for the automatically extracted value
-            # since this only exists on Canvas but not FSC.
-            # Don't remove anything if a manual value is provided
-            self.session = self.session[:-1]
         if self.override_subject is not None:
             self.subject = self.override_subject
         # Add FSC info to the dataframe; standing and standing reason are
         # blank by default and filled out manually when needed
         self.fsc_grades = self.canvas_grades.copy()
         additional_fsc_fields = [
-            'Campus', 'Course', 'Session', 'Subject','Standing', 'Standing Reason'
+            'Campus', 'Course', 'Session', 'Subject', 'Standing', 'Standing Reason'
         ]
         self.fsc_grades[additional_fsc_fields] = (
             self.campus, self.course_name, self.session, self.subject, '', '')
@@ -695,6 +690,12 @@ class FscGrades(CanvasConnection):
         self.fsc_grades['Grade Note'] = ''
         self.fsc_grades['Status'] = ''
         self.fsc_grades['Updated By'] = ''
+        # Workday also does not adhere to the same format as Canvas for the Academic Period/Session because that would be too logical
+        year = self.session[:4]
+        term = self.session[4:]
+        self.fsc_grades['Academic Period'] = (
+            f'{year}-{int(year[2:]) + 1} Winter Term {term[1]} (UBC-{self.subject.split("_")[-1]})'
+        )
 
         # Round to whole percentage format since FSC requires that
         # Using Decimal to always round up .5 instead of rounding to even,
@@ -733,7 +734,6 @@ class FscGrades(CanvasConnection):
                     'Preferred Name': 'Student Preferred Name',
                     'Surname': 'Student Last Name',
                     'Percent Grade': 'Grade',
-                    'Session': 'Academic Period',  # needs reformatting
                     'Subject': 'Course Subject Code',
                     'Course': 'Course Number',
                     'Section': 'Section Number',
