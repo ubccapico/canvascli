@@ -1170,19 +1170,23 @@ class FscGrades(CanvasConnection):
         # This sorting of values is required to line up the points with the violin cloud below
         ).sort_values(['User ID', 'Grade Status', 'Percent Type', 'Percent Grade'])
 
-        # This sorting of values and the index reset is required to line up the violin cloud with the df above
-        self.fsc_grades_for_viz['violin_cloud'] = self.fsc_grades.sort_values(
-            ['User ID', 'Percent Grade']
-        ).reset_index()[[
-            'Exact Percent Grade',
-            'Percent Grade',
-            'Unposted Exact Percent Grade',
-            'Unposted Percent Grade',
-        ]].apply(
-            _compute_violin_cloud
-        ).stack(
-            dropna=False
-        ).to_numpy()
+        # TODO fix when pandas 3.0 is released and we can use the new "stack" method
+        import warnings
+        with warnings.catch_warnings():
+            warnings.simplefilter("ignore", category=FutureWarning)
+            # This sorting of values and the index reset is required to line up the violin cloud with the df above
+            self.fsc_grades_for_viz['violin_cloud'] = self.fsc_grades.sort_values(
+                ['User ID', 'Percent Grade']
+            ).reset_index()[[
+                'Exact Percent Grade',
+                'Percent Grade',
+                'Unposted Exact Percent Grade',
+                'Unposted Percent Grade',
+            ]].apply(
+                _compute_violin_cloud
+            ).stack(
+                dropna=False
+            ).to_numpy()
 
         # Set up selection elements
         grade_status_dropdown = alt.binding_select(

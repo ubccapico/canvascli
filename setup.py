@@ -24,7 +24,7 @@ setup(
         'altair>=5.4.0',
         'canvasapi>=2.1.0',
         'click>=8.0.0',
-        'pandas>=2.1.0',
+        'pandas>=2.1.0,<3.0',
         'tabulate>=0.8.3',
         'dataclassy>=0.10',
         'luddite>=1.0',
