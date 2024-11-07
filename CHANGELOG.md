@@ -7,9 +7,20 @@ Note that major version zero (0.y.z) is for initial development and anything may
 
 ## [Unreleased] ???
 
+## Added
+
+- xlsxwriter as a dependency (for Workday formatting for grades).
+
+## Changed
+
+- BREAKING Changed the CSV export format from FSC to Workday.
+- Updated mentions of "FSC" to be more general, including the file names.
+- Clarified error message for ungraded assignments.
+
 ## Fixed
 
 - Print fewer columns for students with an override score so that it is easier to overview.
+- Silenced a pandas future warning and restricted from upgrading to to 3.0.
 
 ## [0.7.0] 2023-12-14
 
