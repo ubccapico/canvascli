@@ -537,22 +537,24 @@ class FscGrades(CanvasConnection):
 
             click.secho('\nWARNING', fg='red', bold=True)
             click.echo(
-                'Remember to grade all assignments on Canvas'
-                '\nbefore creating the CSV-file to upload to the FSC.'
+                'There are currently ungraded Canvas assignments'
+                '\nthat would change the final score of '
+                + click.style(f'{students_with_diff_current_score.shape[0]} students.', bold=True)
+                + '\nGrade all assignments on Canvas before using canvascli' 
+                '\nto create the CSV-file with final grades.'
                 '\nNote that the "Total" grade shown on Canvas'
                 '\nis not taking into account ungraded assignments (marked as "-"),'
                 '\nso it is not the same as the final grade (which replaces "-" with "0").'
                 '\nIf all such cases are for students who did not make a submission'
                 '\nand therefore should get a 0, no action is required.'
-                '\nThere are currently ungraded Canvas assignments'
-                '\nthat would change the final score of '
-                + click.style(f'{students_with_diff_current_score.shape[0]} students.', bold=True)
+                '\nIf a student should be excused from an assignment, enter "Ex" on Canvas'
+                '\nto avoid counting the assignment towards their final grade.'
             )
 
             if students_with_diff_current_score.shape[0] > 5:
-                click.echo('Showing the first five in the table below:\n')
+                click.echo('Showing the first five affected students in the table below:\n')
             else:
-                click.echo('Showing these students in the table below:\n')
+                click.echo('Showing the affected students in the table below:\n')
             # Indexing up until the first 10 works even if there are fewer than 10 entries
             click.echo(
                 students_with_diff_current_score[:5]
