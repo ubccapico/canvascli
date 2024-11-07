@@ -20,6 +20,7 @@ from appdirs import user_data_dir
 from canvasapi import Canvas
 from canvasapi.exceptions import InvalidAccessToken, Unauthorized
 from luddite import get_version_pypi
+from pandas.io.formats import excel
 from scipy import stats
 from tqdm import tqdm
 # Using https://github.com/biqqles/dataclassy instead of dataclasses from
@@ -733,6 +734,8 @@ class FscGrades(CanvasConnection):
             header=False
         )
         with pd.ExcelWriter(excel_file_name, mode='a', if_sheet_exists='overlay') as writer: 
+            # Workday has some issues with renderering default header style
+            excel.ExcelFormatter.header_style = None
             if not len(self.section):  # The default is an empty tuple which means "all sections"
                 self.section = self.fsc_grades['Section'].unique()
             # Reorder columns to match the required FSC format
