@@ -156,10 +156,10 @@ def cli():
               ' detected course session in the CSV file with this text. Default: None')
 @click.option('--override-subject', default=None, help='Override the automatically'
               ' detected course subject in the CSV file with this text. Default: None')
-def prepare_fsc_grades(course_id, section, filename, api_url, student_status,
-                       drop_students, drop_threshold, drop_na, open_chart,
-                       filter_assignments, group_by, override_campus, override_course,
-                       override_section, override_session, override_subject):
+def prepare_grades(course_id, section, filename, api_url, student_status,
+                   drop_students, drop_threshold, drop_na, open_chart,
+                   filter_assignments, group_by, override_campus, override_course,
+                   override_section, override_session, override_subject):
     """Prepare course grades for FSC submission.
     \b
     Download grades from a canvas course and convert them to the format
@@ -175,10 +175,10 @@ def prepare_fsc_grades(course_id, section, filename, api_url, student_status,
     \b
     Examples:
         # Download grades from canvas and convert them to FSC format
-        canvascli prepare_fsc_grades --course-id 53665
+        canvascli prepare_grades --course-id 53665
         \b
         # Give a custom file name and drop a specific student
-        canvascli prepare_fsc_grades --course-id 53665 --drop-students "43659202"
+        canvascli prepare_grades --course-id 53665 --drop-students "43659202"
     """
     fsc_grades = FscGrades(
         course_id, section, filename, api_url, student_status, drop_students,
