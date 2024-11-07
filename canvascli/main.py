@@ -687,6 +687,14 @@ class FscGrades(CanvasConnection):
         ]
         self.fsc_grades[additional_fsc_fields] = (
             self.campus, self.course_name, self.session, self.subject, '', '')
+        
+        # The new workday format seems to set the "Grading Basis" column to "Graded"
+        # for every student in the the downloaded CSV file, before knowing whether a grade will actually be entered.
+        # Just brilliant... I'm unsure whether we need to remove this if a grade is not entered.
+        self.fsc_grades['Grading Basis'] = 'Graded'
+        self.fsc_grades['Grade Note'] = ''
+        self.fsc_grades['Status'] = ''
+        self.fsc_grades['Updated By'] = ''
 
         # Round to whole percentage format since FSC requires that
         # Using Decimal to always round up .5 instead of rounding to even,
@@ -707,15 +715,49 @@ class FscGrades(CanvasConnection):
 
     def save_fsc_grades_to_file(self):
         """Write a CSV file that can be uploaded to FSC."""
-        # Reorder columns to match the required FSC format
-        self.fsc_grades[[
-            'Session', 'Campus', 'Student Number', 'Subject', 'Course', 'Section',
-            'Surname', 'Preferred Name', 'Standing', 'Standing Reason', 'Percent Grade'
-        ]].to_csv(
-            self.filename + '.csv',
-            index=False
+        excel_file_name = self.filename + '.xlsx'
+        # Redundant preamble that workday requires for no good reason
+        pd.DataFrame({
+            'a': ['Record Name:', 'Exported On', ''],
+            'b': ['Course Registrations', pd.Timestamp.now().strftime('%b %-d, %Y %-I:%-M %p'), '']
+        }).to_excel(
+            excel_file_name,
+            index=False,
+            header=False
         )
-        click.secho(f'Grades saved to {self.filename}.csv.', bold=True, fg='green')
+        with pd.ExcelWriter(excel_file_name, mode='a', if_sheet_exists='overlay') as writer: 
+            # Reorder columns to match the required FSC format
+            self.fsc_grades.rename(
+                columns={
+                    'Student Number': 'Student Id',
+                    'Preferred Name': 'Student Preferred Name',
+                    'Surname': 'Student Last Name',
+                    'Percent Grade': 'Grade',
+                    'Session': 'Academic Period',  # needs reformatting
+                    'Subject': 'Course Subject Code',
+                    'Course': 'Course Number',
+                    'Section': 'Section Number',
+                }
+            )[[
+                'Student Id',
+                'Student Preferred Name',
+                'Student Last Name',
+                'Grading Basis',
+                'Grade',
+                'Grade Note',
+                'Academic Period',
+                'Course Subject Code',
+                'Course Number',
+                'Section Number',
+                'Status',
+                'Updated By',
+            ]].to_excel(
+                writer,
+                index=False,
+                startrow=3,
+                sheet_name='Sheet1'
+            )
+        click.secho(f'Grades saved to {excel_file_name}.', bold=True, fg='green')
         return
 
     def plot_assignment_scores(self):
