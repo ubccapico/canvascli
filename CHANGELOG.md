@@ -5,7 +5,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 Version number is based on [Semver](https://semver.org/).
 Note that major version zero (0.y.z) is for initial development and anything may change at any time.
 
-## [Unreleased] ???
+## [0.8.0] 2024-11-19
 
 ## Added
 
