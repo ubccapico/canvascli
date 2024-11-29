@@ -4,6 +4,7 @@ See the README and class docstrings for more info.
 import getpass
 import json
 import os
+import platform
 import re
 from collections import defaultdict
 from datetime import datetime
@@ -770,7 +771,8 @@ class PreparedGrades(CanvasConnection):
             writer.sheets['Sheet1'].write(0, 0, "Record Name:")
             writer.sheets['Sheet1'].write(0, 1, "Course Registrations")
             writer.sheets['Sheet1'].write(1, 0, "Exported On:")
-            writer.sheets['Sheet1'].write(1, 1, pd.Timestamp.now().strftime('%b %-d, %Y %-I:%-M %p'))
+            time_format = '%b %#d, %Y %#I:%#M %p' if platform.system() == 'Windows' else '%b %-d, %Y %-I:%-M %p'
+            writer.sheets['Sheet1'].write(1, 1, pd.Timestamp.now().strftime(time_format))
         click.secho(f'Grades saved to {excel_file_name}.', bold=True, fg='green')
         return
 
