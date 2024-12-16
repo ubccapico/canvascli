@@ -1506,6 +1506,6 @@ class PreparedGrades(CanvasConnection):
             '\n   to how UBC inputs course info on Canvas.'
             '\n3. If you have students that did not take the final exam'
             '\n   you will need to enter this info manually.'
-            '\n   Please see https://facultystaff.students.ubc.ca/files/FSCUserGuide.pdf'
-            '\n   under "Acceptable Values for Grades Entry" for how to modify the CSV file.')
+            '\n   Please see https://confluence.it.ubc.ca/display/IRPTCM/Training+Hub+for+Instructors'
+            '\n   for more information on how to modify the CSV file.')
         return
