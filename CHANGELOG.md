@@ -5,6 +5,13 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 Version number is based on [Semver](https://semver.org/).
 Note that major version zero (0.y.z) is for initial development and anything may change at any time.
 
+## [0.8.2] 2024-12-16
+
+## Changed
+
+- Removed grading basis column since it is no longer supported.
+- Change "read more" link to point to the new documentation
+
 ## [0.8.1] 2024-11-28
 
 ## Fixed
