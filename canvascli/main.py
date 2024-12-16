@@ -693,10 +693,6 @@ class PreparedGrades(CanvasConnection):
         self.prepared_grades[additional_fields] = (
             self.campus, self.course_name, self.session, self.subject, '', '')
         
-        # The new workday format seems to set the "Grading Basis" column to "Graded"
-        # for every student in the the downloaded CSV file, before knowing whether a grade will actually be entered.
-        # Just brilliant... I'm unsure whether we need to remove this if a grade is not entered.
-        self.prepared_grades['Grading Basis'] = 'Graded'
         self.prepared_grades['Grade Note'] = ''
         self.prepared_grades['Status'] = ''
         self.prepared_grades['Updated By'] = ''
@@ -751,7 +747,6 @@ class PreparedGrades(CanvasConnection):
                 'Student Id',
                 'Student Preferred Name',
                 'Student Last Name',
-                'Grading Basis',
                 'Grade',
                 'Grade Note',
                 'Academic Period',
