@@ -5,6 +5,12 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 Version number is based on [Semver](https://semver.org/).
 Note that major version zero (0.y.z) is for initial development and anything may change at any time.
 
+## [0.8.3] 2025-07-14
+
+### Fixed
+
+- Correctly format "Academic Period" for the summer session.
+
 ## [0.8.2] 2024-12-16
 
 ## Changed
@@ -14,39 +20,39 @@ Note that major version zero (0.y.z) is for initial development and anything may
 
 ## [0.8.1] 2024-11-28
 
-## Fixed
+### Fixed
 
 - Windows-specific error with format string for timestamps
 
 ## [0.8.0] 2024-11-19
 
-## Added
+### Added
 
 - xlsxwriter as a dependency (for Workday formatting for grades).
 
-## Changed
+### Changed
 
 - BREAKING Changed the CSV export format from FSC to Workday.
 - Updated mentions of "FSC" to be more general, including the file names.
 - Clarified error message for ungraded assignments.
 
-## Fixed
+### Fixed
 
 - Print fewer columns for students with an override score so that it is easier to overview.
 - Silenced a pandas future warning and restricted from upgrading to to 3.0.
 
 ## [0.7.0] 2023-12-14
 
-## Added
+### Added
 - Warn when there are ungraded assignments, similar to the warning for unposted assignments.
 
-## Fixed
+### Fixed
 - Show less rows and columns in warnings to make the output easier to overview.
 - Fix numexpr issue with macs not being able to use the C engine for pandas query
 
 ## [0.6.2]] 2023-10-15
 
-## Fixed
+### Fixed
 - Switch to check "creation" instead of "start" date in the `show-courses` subcommand,
   since many courses don't have a "start" date listed.
 - Fix handling of NAs in date strings for `show-courses` subcommand.
@@ -54,7 +60,7 @@ Note that major version zero (0.y.z) is for initial development and anything may
 
 ## [0.6.1]] 2023-05-05
 
-## Fixed
+### Fixed
 - Fix regression introduced in 0.6.0 where the checking for the student id was done incorrectly so that it always evaluated to False.
 
 ## [0.6.0] 2023-05-02
