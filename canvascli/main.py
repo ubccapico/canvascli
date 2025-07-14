@@ -699,8 +699,11 @@ class PreparedGrades(CanvasConnection):
         # Workday also does not adhere to the same format as Canvas for the Academic Period/Session because that would be too logical
         year = self.session[:4]
         term = self.session[4:]
+        campus = f'UBC-{self.subject.split("_")[-1]}'
         self.prepared_grades['Academic Period'] = (
-            f'{year}-{int(year[2:]) + 1} Winter Term {term[1]} (UBC-{self.subject.split("_")[-1]})'
+            f'{year} Summer Session ({campus})'
+            if term == 'S1'
+            else f'{year}-{int(year[2:]) + 1} Winter Term {term[1]} ({campus})'
         )
 
         # Round to whole percentage format since final submission requires it.
