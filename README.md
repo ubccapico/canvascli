@@ -1,9 +1,8 @@
 # canvascli
 
-`canvascli` downloads grades from Canvas,
-converts them into the format required
-for final submission to the FSC at UBC,
-and creates a few helpful visualizations.
+`canvascli` downloads grades from Canvas, converts them into the format 
+required for final submission to Workday at UBC, and creates a few 
+helpful visualizations.
 
 ## Installation
 
@@ -29,15 +28,15 @@ or [store it in an environment variable](https://www.poftut.com/how-to-set-envir
 Typing `canvascli` at the command prompt will show the general help message
 including the available sub-commands.
 The most common use case
-is probably to prepare final grades for FSC submission,
+is probably to prepare final grades for Workday submission,
 which you can do like so:
 
 ```shell
-canvascli prepare-fsc-grades --course-id 53665
+canvascli prepare-grades --course-id 53665
 ```
 
 This will save a CSV file in the current directory
-which can be uploaded to the FSC.
+which can be uploaded to Workday.
 The file should automatically be correctly formatted,
 but it is a good idea to double check
 in case there are unexpected changes
@@ -46,7 +45,7 @@ to how UBC inputs course info on Canvas.
 `canvascli` drops students without a grade by default,
 and creates a few helpful visualizations of the final grades
 and assignment scores.
-Run `canvascli prepare-fsc-grades --help`
+Run `canvascli prepare-grades --help`
 to view all available options.
 
 If you don't know the Canvas course id of your course,
